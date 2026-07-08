@@ -10,7 +10,7 @@ export async function GET() {
   } catch (error) {
     console.error("Failed to fetch patents:", error);
     return NextResponse.json(
-      { error: "Failed to load patents. Run `node scripts/import-patents.js` first." },
+      { error: "Failed to load patents." },
       { status: 500 }
     );
   }

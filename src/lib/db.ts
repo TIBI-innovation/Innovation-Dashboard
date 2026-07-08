@@ -15,26 +15,36 @@ export interface PatentRow {
 
 const DB_PATH = path.join(process.cwd(), "innovation.db");
 
-let _db: Database.Database | null = null;
-
-export function getDB(): Database.Database {
-  if (!_db) {
-    _db = new Database(DB_PATH);
-    _db.pragma("journal_mode = WAL");
-  }
-  return _db;
-}
-
 export function getTechnologies(): TechnologyRow[] {
-  const db = getDB();
-  return db
-    .prepare("SELECT idf_number, created_by, technology_category FROM technologies ORDER BY idf_number")
-    .all() as TechnologyRow[];
+  try {
+    const db = new Database(DB_PATH);
+    try {
+      return db
+        .prepare(
+          "SELECT idf_number, created_by, technology_category FROM technologies"
+        )
+        .all() as TechnologyRow[];
+    } finally {
+      db.close();
+    }
+  } catch {
+    return [];
+  }
 }
 
 export function getPatents(): PatentRow[] {
-  const db = getDB();
-  return db
-    .prepare("SELECT patent_number, technology_category, status FROM patents ORDER BY patent_number")
-    .all() as PatentRow[];
+  try {
+    const db = new Database(DB_PATH);
+    try {
+      return db
+        .prepare(
+          "SELECT patent_number, technology_category, status FROM patents"
+        )
+        .all() as PatentRow[];
+    } finally {
+      db.close();
+    }
+  } catch {
+    return [];
+  }
 }

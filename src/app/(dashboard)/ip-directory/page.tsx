@@ -160,9 +160,6 @@ export default function IPDirectoryPage() {
             <Card>
               <CardContent className="py-8 text-center">
                 <p className="text-sm text-gray-400">No IDF data available.</p>
-                <p className="mt-1 text-xs text-gray-400">
-                  Run <code className="rounded bg-gray-100 px-1.5 py-0.5">npm run import:idfs</code> to import data.
-                </p>
               </CardContent>
             </Card>
           ) : (
@@ -241,7 +238,7 @@ export default function IPDirectoryPage() {
               )}
 
               {/* IDF pie chart */}
-              <Card>
+              <Card className="mt-8">
                 <CardHeader>
                   <CardTitle>IDFs by Technology Sector</CardTitle>
                   <CardDescription>
@@ -295,9 +292,6 @@ export default function IPDirectoryPage() {
             <Card>
               <CardContent className="py-8 text-center">
                 <p className="text-sm text-gray-400">No patent data available.</p>
-                <p className="mt-1 text-xs text-gray-400">
-                  Run <code className="rounded bg-gray-100 px-1.5 py-0.5">npm run import:patents</code> to import data.
-                </p>
               </CardContent>
             </Card>
           ) : (
@@ -382,7 +376,7 @@ export default function IPDirectoryPage() {
               )}
 
               {/* Patent pie chart */}
-              <Card>
+              <Card className="mt-8">
                 <CardHeader>
                   <CardTitle>Patents by Technology Sector</CardTitle>
                   <CardDescription>

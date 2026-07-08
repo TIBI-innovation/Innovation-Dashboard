@@ -10,7 +10,7 @@ export async function GET() {
   } catch (error) {
     console.error("Failed to fetch technologies:", error);
     return NextResponse.json(
-      { error: "Failed to load technologies. Run `node scripts/seed-db.js` first." },
+      { error: "Failed to load technologies." },
       { status: 500 }
     );
   }
