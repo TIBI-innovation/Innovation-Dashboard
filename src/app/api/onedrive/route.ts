@@ -36,28 +36,45 @@ async function readFolderEntries(folderPath: string, basePath: string): Promise<
 
 export async function GET(request: Request) {
   try {
-    const resolvedPath = path.resolve(ONEDRIVE_FOLDER_PATH);
+    const { searchParams } = new URL(request.url);
+    const subPath = searchParams.get("path") || "";
+
+    const basePath = path.resolve(ONEDRIVE_FOLDER_PATH);
+    let resolvedPath = basePath;
+
+    if (subPath) {
+      resolvedPath = path.resolve(path.join(basePath, subPath));
+
+      if (!resolvedPath.startsWith(basePath)) {
+        return NextResponse.json(
+          { error: "Access denied: Invalid path" },
+          { status: 403 }
+        );
+      }
+    }
 
     if (!fs.existsSync(resolvedPath)) {
       return NextResponse.json({
-        rootPath: resolvedPath,
+        rootPath: basePath,
+        currentPath: resolvedPath,
         entries: [],
-        warning: "Configured OneDrive folder does not exist. Set ONE_DRIVE_FOLDER_PATH to a valid local folder.",
+        warning: "Folder does not exist.",
       });
     }
 
     const stats = await fs.promises.stat(resolvedPath);
     if (!stats.isDirectory()) {
       return NextResponse.json(
-        { error: "Configured OneDrive path is not a directory." },
+        { error: "Path is not a directory." },
         { status: 400 }
       );
     }
 
-    const entries = await readFolderEntries(resolvedPath, resolvedPath);
+    const entries = await readFolderEntries(resolvedPath, basePath);
 
     return NextResponse.json({
-      rootPath: resolvedPath,
+      rootPath: basePath,
+      currentPath: resolvedPath,
       entries,
     });
   } catch (error) {
