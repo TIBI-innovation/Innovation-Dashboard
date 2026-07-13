@@ -12,6 +12,7 @@ export interface PatentRow {
   patent_number: string;
   technology_category: string;
   status: string;
+  notes: string;
 }
 
 const DATA_FOLDER_PATH = path.resolve(
@@ -79,6 +80,7 @@ export function getPatents(): PatentRow[] {
         "technology_category",
       ]),
       status: getFirstValue(row, ["Status", "status"]),
+      notes: getFirstValue(row, ["Deadlines", "deadlines"]),
     }))
-    .filter((row) => row.patent_number || row.technology_category || row.status);
+    .filter((row) => row.patent_number || row.technology_category || row.status || row.notes);
 }

@@ -10,6 +10,7 @@ interface PatentRow {
   patent_number: string;
   technology_category: string;
   status: string;
+  notes?: string;
 }
 
 interface TechnologyRow {
@@ -39,8 +40,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/technologies").then((r) => r.json()),
-      fetch("/api/patents").then((r) => r.json()),
+      fetch("/api/technologies", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/patents", { cache: "no-store" }).then((r) => r.json()),
     ])
       .then(([techs, pats]) => {
         setTechnologies(Array.isArray(techs) ? techs : []);
@@ -52,6 +53,10 @@ export default function DashboardPage() {
 
   const topIdf = useMemo(() => mostCommonSector(technologies), [technologies]);
   const topPatent = useMemo(() => mostCommonSector(patentRows), [patentRows]);
+  const urgentPatents = useMemo(
+    () => patentRows.filter((p) => (p.status || "").trim().toUpperCase() === "URGENT"),
+    [patentRows]
+  );
 
   const statCards = [
     {
@@ -130,22 +135,23 @@ export default function DashboardPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary-600" />
-                <CardTitle>Recent Patents</CardTitle>
+                <CardTitle>Upcoming Deadlines</CardTitle>
               </div>
-              <CardDescription>Latest additions to your patent portfolio</CardDescription>
+              <CardDescription>Patents marked URGENT and their action notes</CardDescription>
             </CardHeader>
             <CardContent>
               {!loaded ? (
-                <p className="py-4 text-center text-sm text-gray-400">Loading patent data...</p>
-              ) : patentRows.length === 0 ? (
-                <p className="py-4 text-center text-sm text-gray-400">No patent data available.</p>
+                <p className="py-4 text-center text-sm text-gray-400">Loading deadline data...</p>
+              ) : urgentPatents.length === 0 ? (
+                <p className="py-4 text-center text-sm text-gray-400">No urgent patent deadlines.</p>
               ) : (
                 <div className="space-y-3">
-                  {patentRows.slice(0, 4).map((p) => (
+                  {urgentPatents.map((p) => (
                     <div key={p.patent_number} className="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0 last:pb-0">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{p.patent_number}</p>
                         <p className="text-xs text-gray-500">{p.technology_category}</p>
+                        <p className="mt-1 text-xs text-gray-600">{p.notes || "No deadline provided."}</p>
                       </div>
                       {p.status ? (
                         <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
