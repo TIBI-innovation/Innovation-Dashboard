@@ -12,9 +12,16 @@ All file operations are centralized in:
 
 ## Configuration
 
-File path is configured in `.env.local`:
+Folder path is configured in `.env.local`:
 ```
 ONEDRIVE_FOLDER_PATH=C:\Users\Innovation\OneDrive - Terasaki Institute for Biomedical Innovation\Keuna Jeon's files - Maddie-summer2026
+```
+
+Dashboard data APIs (`/api/technologies` and `/api/patents`) can also be pointed at any local folder:
+```
+LOCAL_DATA_FOLDER_PATH=C:\path\to\your\local\data\folder
+IDF_DATA_FILE=sanitized-idf-database.csv
+PATENT_DATA_FILE=sanitized-patents-database.csv
 ```
 
 ## Usage Examples
