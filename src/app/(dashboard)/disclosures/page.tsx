@@ -47,24 +47,43 @@ export default function DisclosuresPage() {
     if (!selectedValue || sortMode === "idf") return undefined;
     const key = selectedValue;
     if (sortMode === "creator") {
-      return technologies.filter((t) => (t.created_by || "(unnamed)") === key);
+      return technologies.filter((t) => t.created_by === key);
     }
     if (sortMode === "category") {
-      return technologies.filter((t) => (t.technology_category || "(uncategorized)") === key);
+      return technologies.filter((t) => t.technology_category === key);
     }
     return undefined;
   }, [technologies, sortMode, selectedValue]);
 
   const distinctValues = useMemo(() => {
     if (sortMode === "idf") {
-      return technologies.map((t) => t.idf_number).sort();
+      return technologies
+        .map((t) => t.idf_number)
+        .filter((v) => v && typeof v === "string" && v.trim().length > 0)
+        .sort();
     }
     if (sortMode === "creator") {
-      const unique = Array.from(new Set(technologies.map((t) => t.created_by || "(unnamed)")));
+      const unique = Array.from(
+        new Set(
+          technologies
+            .map((t) => t.created_by)
+            .filter(
+              (v) => v && typeof v === "string" && v.trim().length > 0 && !v.match(/^IDF\d+/)
+            )
+        )
+      );
       return unique.sort((a, b) => a.localeCompare(b));
     }
     if (sortMode === "category") {
-      const unique = Array.from(new Set(technologies.map((t) => t.technology_category || "(uncategorized)")));
+      const unique = Array.from(
+        new Set(
+          technologies
+            .map((t) => t.technology_category)
+            .filter(
+              (v) => v && typeof v === "string" && v.trim().length > 0 && !v.match(/^IDF\d+/)
+            )
+        )
+      );
       return unique.sort((a, b) => a.localeCompare(b));
     }
     return [];

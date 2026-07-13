@@ -23,7 +23,7 @@ export const FILE_PATHS = {
  * Data structure for IDF records
  */
 export interface IDFRecord {
-  [key: string]: string;
+  [key: string]: string | undefined;
   idf_number?: string;
   created_by?: string;
   technology_category?: string;
@@ -34,7 +34,7 @@ export interface IDFRecord {
  * Data structure for Patent records
  */
 export interface PatentRecord {
-  [key: string]: string;
+  [key: string]: string | undefined;
   patent_number?: string;
   technology_category?: string;
   status?: string;
