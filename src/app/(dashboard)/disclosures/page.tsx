@@ -22,6 +22,24 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
 const ONEDRIVE_URL =
   "https://terasakilab-my.sharepoint.com/:f:/g/personal/madeline_rogers_terasakicolab_org/IgCUWHHQyzOVRaZh1GUqfyZ7AXcLoQVduIY9kxjFKOvYKSY?e=wANRmj";
 
+function isValidCreatorName(row: TechnologyRow): boolean {
+  const creator = (row.created_by || "").trim();
+  if (!creator) return false;
+  if (!/[A-Za-z]/.test(creator)) return false;
+  if (/\d/.test(creator)) return false;
+  if (/^IDF\d+/i.test(creator)) return false;
+  if (creator === (row.idf_number || "").trim()) return false;
+  if (creator === (row.technology_category || "").trim()) return false;
+  return true;
+}
+
+function splitCreatorNames(createdBy: string): string[] {
+  return createdBy
+    .split(/[;,|]/)
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+}
+
 export default function DisclosuresPage() {
   const [technologies, setTechnologies] = useState<TechnologyRow[]>([]);
   const [sortMode, setSortMode] = useState<SortMode>("idf");
@@ -47,7 +65,7 @@ export default function DisclosuresPage() {
     if (!selectedValue || sortMode === "idf") return undefined;
     const key = selectedValue;
     if (sortMode === "creator") {
-      return technologies.filter((t) => t.created_by === key);
+      return technologies.filter((t) => splitCreatorNames(t.created_by || "").includes(key));
     }
     if (sortMode === "category") {
       return technologies.filter((t) => t.technology_category === key);
@@ -55,27 +73,34 @@ export default function DisclosuresPage() {
     return undefined;
   }, [technologies, sortMode, selectedValue]);
 
-  const distinctValues = useMemo(() => {
-    if (sortMode === "idf") {
-      return technologies
-        .map((t) => t.idf_number)
-        .filter((v) => v && typeof v === "string" && v.trim().length > 0)
-        .sort();
-    }
-    if (sortMode === "creator") {
-      const unique = Array.from(
+  const idfValues = useMemo(
+    () =>
+      Array.from(
         new Set(
           technologies
-            .map((t) => t.created_by)
-            .filter(
-              (v) => v && typeof v === "string" && v.trim().length > 0 && !v.match(/^IDF\d+/)
-            )
+            .map((t) => t.idf_number)
+            .filter((v) => v && typeof v === "string" && v.trim().length > 0)
         )
-      );
-      return unique.sort((a, b) => a.localeCompare(b));
-    }
-    if (sortMode === "category") {
-      const unique = Array.from(
+      ).sort(),
+    [technologies]
+  );
+
+  const creatorValues = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          technologies
+            .filter(isValidCreatorName)
+            .flatMap((t) => splitCreatorNames(t.created_by || ""))
+            .filter((name) => /[A-Za-z]/.test(name) && !/\d/.test(name) && !/^IDF/i.test(name))
+        )
+      ).sort((a, b) => a.localeCompare(b)),
+    [technologies]
+  );
+
+  const categoryValues = useMemo(
+    () =>
+      Array.from(
         new Set(
           technologies
             .map((t) => t.technology_category)
@@ -83,11 +108,15 @@ export default function DisclosuresPage() {
               (v) => v && typeof v === "string" && v.trim().length > 0 && !v.match(/^IDF\d+/)
             )
         )
-      );
-      return unique.sort((a, b) => a.localeCompare(b));
-    }
-    return [];
-  }, [technologies, sortMode]);
+      ).sort((a, b) => a.localeCompare(b)),
+    [technologies]
+  );
+
+  const distinctValues = useMemo(() => {
+    if (sortMode === "creator") return creatorValues;
+    if (sortMode === "category") return categoryValues;
+    return idfValues;
+  }, [sortMode, idfValues, creatorValues, categoryValues]);
 
   function handleSortChange(mode: SortMode) {
     setSortMode(mode);
@@ -161,6 +190,7 @@ export default function DisclosuresPage() {
                 ))}
               </select>
               <select
+                key={sortMode}
                 value={selectedValue}
                 onChange={(e) => setSelectedValue(e.target.value)}
                 className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[200px]"
