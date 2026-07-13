@@ -45,6 +45,13 @@ function buildSectorCounts(records: { technology_category: string }[]): SectorCo
     .sort((a, b) => b.count - a.count);
 }
 
+function getStatusBadgeClass(status: string): string {
+  const normalized = status.trim().toUpperCase();
+  if (normalized === "URGENT") return "bg-red-100 text-red-700";
+  if (normalized === "BLOCKED") return "bg-yellow-100 text-yellow-700";
+  return "bg-blue-100 text-blue-700";
+}
+
 const renderLabel = ({
   sector,
   percent,
@@ -359,7 +366,11 @@ export default function IPDirectoryPage() {
                               </td>
                               <td className="py-2.5">
                                 {r.status ? (
-                                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                                  <span
+                                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClass(
+                                      r.status
+                                    )}`}
+                                  >
                                     {r.status}
                                   </span>
                                 ) : (
