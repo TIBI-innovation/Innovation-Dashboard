@@ -16,6 +16,7 @@ interface PatentRow {
   patent_number: string;
   technology_category: string;
   status: string;
+  notes?: string;
 }
 
 interface SectorCount {
@@ -92,6 +93,8 @@ export default function IPDirectoryPage() {
   const [technologies, setTechnologies] = useState<TechnologyRow[]>([]);
   const [patents, setPatents] = useState<PatentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isIdfSectionOpen, setIsIdfSectionOpen] = useState(false);
+  const [isPatentSectionOpen, setIsPatentSectionOpen] = useState(false);
   const [selectedIdfSector, setSelectedIdfSector] = useState<string | null>(null);
   const [selectedPatentSector, setSelectedPatentSector] = useState<string | null>(null);
 
@@ -131,6 +134,10 @@ export default function IPDirectoryPage() {
       (p) => (p.technology_category || "(uncategorized)") === selectedPatentSector
     );
   }, [patents, selectedPatentSector]);
+  const urgentPatents = useMemo(
+    () => patents.filter((p) => (p.status || "").trim().toUpperCase() === "URGENT"),
+    [patents]
+  );
 
   function toggleIdfSector(sector: string) {
     setSelectedIdfSector((prev) => (prev === sector ? null : sector));
@@ -154,276 +161,340 @@ export default function IPDirectoryPage() {
 
         {/* Section 1: IDFs by sector */}
         <section>
-          <div className="mb-4 flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-primary-600" />
-            <h3 className="text-lg font-semibold text-gray-900">
-              Invention Disclosure Forms (IDFs) by Technology Sector
-            </h3>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsIdfSectionOpen((prev) => !prev)}
+            aria-expanded={isIdfSectionOpen}
+            className="mb-4 flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-left hover:bg-gray-50"
+          >
+            <span className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-primary-600" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Invention Disclosure Forms (IDFs) by Technology Sector
+              </h3>
+            </span>
+            {isIdfSectionOpen ? (
+              <ChevronUp className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
 
-          {loading ? (
-            <p className="text-sm text-gray-400">Loading IDF data…</p>
-          ) : idfSectorCounts.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <p className="text-sm text-gray-400">No IDF data available.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {idfSectorCounts.map(({ sector, count }) => (
-                  <button
-                    key={sector}
-                    type="button"
-                    onClick={() => toggleIdfSector(sector)}
-                    className="text-left"
-                  >
-                    <Card
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        selectedIdfSector === sector ? "ring-2 ring-primary-500" : ""
-                      }`}
+          {isIdfSectionOpen &&
+            (loading ? (
+              <p className="text-sm text-gray-400">Loading IDF data…</p>
+            ) : idfSectorCounts.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-sm text-gray-400">No IDF data available.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {idfSectorCounts.map(({ sector, count }) => (
+                    <button
+                      key={sector}
+                      type="button"
+                      onClick={() => toggleIdfSector(sector)}
+                      className="text-left"
                     >
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm">{sector}</CardTitle>
-                          {selectedIdfSector === sector ? (
-                            <ChevronUp className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-gray-400" />
-                          )}
-                        </div>
-                        <CardDescription>
-                          <span className="text-2xl font-bold text-gray-900">{count}</span>{" "}
-                          IDF{count !== 1 ? "s" : ""}
-                        </CardDescription>
-                      </CardHeader>
-                    </Card>
-                  </button>
-                ))}
-              </div>
+                      <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${
+                          selectedIdfSector === sector ? "ring-2 ring-primary-500" : ""
+                        }`}
+                      >
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm">{sector}</CardTitle>
+                            {selectedIdfSector === sector ? (
+                              <ChevronUp className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                            )}
+                          </div>
+                          <CardDescription>
+                            <span className="text-2xl font-bold text-gray-900">{count}</span>{" "}
+                            IDF{count !== 1 ? "s" : ""}
+                          </CardDescription>
+                        </CardHeader>
+                      </Card>
+                    </button>
+                  ))}
+                </div>
 
-              {/* IDF detail panel */}
-              {selectedIdfRecords && selectedIdfRecords.length > 0 && (
-                <Card className="mt-4">
+                {/* IDF detail panel */}
+                {selectedIdfRecords && selectedIdfRecords.length > 0 && (
+                  <Card className="mt-4">
+                    <CardHeader>
+                      <CardTitle>{selectedIdfSector}</CardTitle>
+                      <CardDescription>
+                        {selectedIdfRecords.length} disclosure
+                        {selectedIdfRecords.length !== 1 ? "s" : ""}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead>
+                            <tr className="border-b border-gray-200 text-xs uppercase text-gray-400">
+                              <th className="pb-2 pr-4 font-medium">IDF Number</th>
+                              <th className="pb-2 pr-4 font-medium">Created By</th>
+                              <th className="pb-2 font-medium">Technology Sector</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedIdfRecords.map((r) => (
+                              <tr key={r.idf_number} className="border-b border-gray-100 last:border-0">
+                                <td className="py-2.5 pr-4 font-medium text-gray-900">
+                                  {r.idf_number}
+                                </td>
+                                <td className="py-2.5 pr-4 text-gray-700">
+                                  {r.created_by || "—"}
+                                </td>
+                                <td className="py-2.5 text-gray-700">
+                                  {r.technology_category || "—"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* IDF pie chart */}
+                <Card className="mt-8">
                   <CardHeader>
-                    <CardTitle>{selectedIdfSector}</CardTitle>
+                    <CardTitle>IDFs by Technology Sector</CardTitle>
                     <CardDescription>
-                      {selectedIdfRecords.length} disclosure
-                      {selectedIdfRecords.length !== 1 ? "s" : ""}
+                      Distribution of invention disclosures across technology sectors
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-200 text-xs uppercase text-gray-400">
-                            <th className="pb-2 pr-4 font-medium">IDF Number</th>
-                            <th className="pb-2 pr-4 font-medium">Created By</th>
-                            <th className="pb-2 font-medium">Technology Sector</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedIdfRecords.map((r) => (
-                            <tr key={r.idf_number} className="border-b border-gray-100 last:border-0">
-                              <td className="py-2.5 pr-4 font-medium text-gray-900">
-                                {r.idf_number}
-                              </td>
-                              <td className="py-2.5 pr-4 text-gray-700">
-                                {r.created_by || "—"}
-                              </td>
-                              <td className="py-2.5 text-gray-700">
-                                {r.technology_category || "—"}
-                              </td>
-                            </tr>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RePieChart>
+                        <Pie
+                          data={idfSectorCounts}
+                          dataKey="count"
+                          nameKey="sector"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={90}
+                          innerRadius={40}
+                          label={renderLabel}
+                          labelLine
+                        >
+                          {idfSectorCounts.map((entry) => (
+                            <Cell
+                              key={entry.sector}
+                              fill={getSectorColor(entry.sector, allSectors)}
+                            />
                           ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: number, name: string) => [value, name]}
+                        />
+                      </RePieChart>
+                    </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              )}
-
-              {/* IDF pie chart */}
-              <Card className="mt-8">
-                <CardHeader>
-                  <CardTitle>IDFs by Technology Sector</CardTitle>
-                  <CardDescription>
-                    Distribution of invention disclosures across technology sectors
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RePieChart>
-                      <Pie
-                        data={idfSectorCounts}
-                        dataKey="count"
-                        nameKey="sector"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={90}
-                        innerRadius={40}
-                        label={renderLabel}
-                        labelLine
-                      >
-                        {idfSectorCounts.map((entry) => (
-                          <Cell
-                            key={entry.sector}
-                            fill={getSectorColor(entry.sector, allSectors)}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: number, name: string) => [value, name]}
-                      />
-                    </RePieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </>
-          )}
+              </>
+            ))}
         </section>
 
         {/* Section 2: Patents by sector */}
         <section>
-          <div className="mb-4 flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary-600" />
-            <h3 className="text-lg font-semibold text-gray-900">
-              Patents Filed / Ready for Licensing by Technology Sector
-            </h3>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsPatentSectionOpen((prev) => !prev)}
+            aria-expanded={isPatentSectionOpen}
+            className="mb-4 flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-left hover:bg-gray-50"
+          >
+            <span className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary-600" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Patents Filed / Ready for Licensing by Technology Sector
+              </h3>
+            </span>
+            {isPatentSectionOpen ? (
+              <ChevronUp className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
 
-          {loading ? (
-            <p className="text-sm text-gray-400">Loading patent data…</p>
-          ) : patentSectorCounts.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <p className="text-sm text-gray-400">No patent data available.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {patentSectorCounts.map(({ sector, count }) => (
-                  <button
-                    key={sector}
-                    type="button"
-                    onClick={() => togglePatentSector(sector)}
-                    className="text-left"
-                  >
-                    <Card
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        selectedPatentSector === sector ? "ring-2 ring-primary-500" : ""
-                      }`}
-                    >
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm">{sector}</CardTitle>
-                          {selectedPatentSector === sector ? (
-                            <ChevronUp className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-gray-400" />
-                          )}
-                        </div>
-                        <CardDescription>
-                          <span className="text-2xl font-bold text-gray-900">{count}</span>{" "}
-                          Patent{count !== 1 ? "s" : ""}
-                        </CardDescription>
-                      </CardHeader>
-                    </Card>
-                  </button>
-                ))}
-              </div>
-
-              {/* Patent detail panel */}
-              {selectedPatentRecords && selectedPatentRecords.length > 0 && (
-                <Card className="mt-4">
+          {isPatentSectionOpen &&
+            (loading ? (
+              <p className="text-sm text-gray-400">Loading patent data…</p>
+            ) : patentSectorCounts.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-sm text-gray-400">No patent data available.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <Card>
                   <CardHeader>
-                    <CardTitle>{selectedPatentSector}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary-600" />
+                      <CardTitle>URGENT To-Dos</CardTitle>
+                    </div>
+                    <CardDescription>Patents marked URGENT and their action notes</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {urgentPatents.length === 0 ? (
+                      <p className="py-4 text-center text-sm text-gray-400">No urgent patent deadlines.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {urgentPatents.map((p) => (
+                          <div key={p.patent_number} className="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{p.patent_number}</p>
+                              <p className="text-xs text-gray-500">{p.technology_category}</p>
+                              <p className="mt-1 text-xs text-gray-600">{p.notes || "No deadline provided."}</p>
+                            </div>
+                            {p.status ? (
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClass(
+                                  p.status
+                                )}`}
+                              >
+                                {p.status}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400">—</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {patentSectorCounts.map(({ sector, count }) => (
+                    <button
+                      key={sector}
+                      type="button"
+                      onClick={() => togglePatentSector(sector)}
+                      className="text-left"
+                    >
+                      <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${
+                          selectedPatentSector === sector ? "ring-2 ring-primary-500" : ""
+                        }`}
+                      >
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm">{sector}</CardTitle>
+                            {selectedPatentSector === sector ? (
+                              <ChevronUp className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                            )}
+                          </div>
+                          <CardDescription>
+                            <span className="text-2xl font-bold text-gray-900">{count}</span>{" "}
+                            Patent{count !== 1 ? "s" : ""}
+                          </CardDescription>
+                        </CardHeader>
+                      </Card>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Patent detail panel */}
+                {selectedPatentRecords && selectedPatentRecords.length > 0 && (
+                  <Card className="mt-4">
+                    <CardHeader>
+                      <CardTitle>{selectedPatentSector}</CardTitle>
+                      <CardDescription>
+                        {selectedPatentRecords.length} record
+                        {selectedPatentRecords.length !== 1 ? "s" : ""}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead>
+                            <tr className="border-b border-gray-200 text-xs uppercase text-gray-400">
+                              <th className="pb-2 pr-4 font-medium">Patent Number</th>
+                              <th className="pb-2 pr-4 font-medium">Technology Sector</th>
+                              <th className="pb-2 font-medium">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedPatentRecords.map((r) => (
+                              <tr key={r.patent_number} className="border-b border-gray-100 last:border-0">
+                                <td className="py-2.5 pr-4 font-medium text-gray-900">
+                                  {r.patent_number}
+                                </td>
+                                <td className="py-2.5 pr-4 text-gray-700">
+                                  {r.technology_category || "—"}
+                                </td>
+                                <td className="py-2.5">
+                                  {r.status ? (
+                                    <span
+                                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClass(
+                                        r.status
+                                      )}`}
+                                    >
+                                      {r.status}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Patent pie chart */}
+                <Card className="mt-8">
+                  <CardHeader>
+                    <CardTitle>Patents by Technology Sector</CardTitle>
                     <CardDescription>
-                      {selectedPatentRecords.length} record
-                      {selectedPatentRecords.length !== 1 ? "s" : ""}
+                      Distribution of patents and licensing records across technology sectors
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-200 text-xs uppercase text-gray-400">
-                            <th className="pb-2 pr-4 font-medium">Patent Number</th>
-                            <th className="pb-2 pr-4 font-medium">Technology Sector</th>
-                            <th className="pb-2 font-medium">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedPatentRecords.map((r) => (
-                            <tr key={r.patent_number} className="border-b border-gray-100 last:border-0">
-                              <td className="py-2.5 pr-4 font-medium text-gray-900">
-                                {r.patent_number}
-                              </td>
-                              <td className="py-2.5 pr-4 text-gray-700">
-                                {r.technology_category || "—"}
-                              </td>
-                              <td className="py-2.5">
-                                {r.status ? (
-                                  <span
-                                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClass(
-                                      r.status
-                                    )}`}
-                                  >
-                                    {r.status}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400">—</span>
-                                )}
-                              </td>
-                            </tr>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RePieChart>
+                        <Pie
+                          data={patentSectorCounts}
+                          dataKey="count"
+                          nameKey="sector"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={90}
+                          innerRadius={40}
+                          label={renderLabel}
+                          labelLine
+                        >
+                          {patentSectorCounts.map((entry) => (
+                            <Cell
+                              key={entry.sector}
+                              fill={getSectorColor(entry.sector, allSectors)}
+                            />
                           ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: number, name: string) => [value, name]}
+                        />
+                      </RePieChart>
+                    </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              )}
-
-              {/* Patent pie chart */}
-              <Card className="mt-8">
-                <CardHeader>
-                  <CardTitle>Patents by Technology Sector</CardTitle>
-                  <CardDescription>
-                    Distribution of patents and licensing records across technology sectors
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RePieChart>
-                      <Pie
-                        data={patentSectorCounts}
-                        dataKey="count"
-                        nameKey="sector"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={90}
-                        innerRadius={40}
-                        label={renderLabel}
-                        labelLine
-                      >
-                        {patentSectorCounts.map((entry) => (
-                          <Cell
-                            key={entry.sector}
-                            fill={getSectorColor(entry.sector, allSectors)}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: number, name: string) => [value, name]}
-                      />
-                    </RePieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </>
-          )}
+              </>
+            ))}
         </section>
       </div>
     </>
