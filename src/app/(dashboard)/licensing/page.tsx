@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { Header } from "@/components/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { KeyRound } from "lucide-react";
+import { Download, KeyRound } from "lucide-react";
 
 interface LicensingResponse {
   technology_summary: string;
@@ -39,6 +39,14 @@ interface LicensingResponse {
   assumptions: string[];
 }
 
+type CompanySizeGroup = "large" | "mid_size" | "small_or_niche";
+
+const COMPANY_GROUPS: Array<{ label: string; key: CompanySizeGroup }> = [
+  { label: "Large Enterprise", key: "large" },
+  { label: "Mid-Size Company", key: "mid_size" },
+  { label: "Small or Niche Company", key: "small_or_niche" },
+];
+
 function confidenceTone(confidence: number): string {
   if (confidence >= 0.8) return "bg-green-50 text-green-700";
   if (confidence >= 0.65) return "bg-blue-50 text-blue-700";
@@ -53,6 +61,7 @@ export default function LicensingPage() {
   const [technicalSummary, setTechnicalSummary] = useState("");
   const [areasToAvoid, setAreasToAvoid] = useState("");
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<LicensingResponse | null>(null);
 
@@ -83,6 +92,104 @@ export default function LicensingPage() {
       setError(submitError instanceof Error ? submitError.message : "Unknown error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleExportToExcel() {
+    if (!result) {
+      return;
+    }
+
+    setExporting(true);
+    setError(null);
+
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.utils.book_new();
+
+      const summaryRows = [
+        {
+          "Technology Summary": result.technology_summary,
+          "Generated At": new Date().toLocaleString(),
+        },
+      ];
+      const sectorsRows = result.sectors.map((sector, index) => ({
+        Rank: index + 1,
+        Sector: sector.name,
+        Description: sector.description,
+        "Relevance Reason": sector.relevance_reason,
+      }));
+
+      const companyRows = COMPANY_GROUPS.flatMap((group) =>
+        result.companies[group.key].map((company, index) => ({
+          "Company Size Group": group.label,
+          Rank: index + 1,
+          Company: company.name,
+          Industry: company.industry,
+          "Why License": company.why_license,
+          "Fit (%)": Math.round(company.confidence * 100),
+          "Contact Count": company.contacts.length,
+        }))
+      );
+
+      const contactRows = COMPANY_GROUPS.flatMap((group) =>
+        result.companies[group.key].flatMap((company) =>
+          company.contacts.map((contact, index) => ({
+            "Company Size Group": group.label,
+            Company: company.name,
+            "Contact Rank": index + 1,
+            Name: contact.name || "",
+            Title: contact.title,
+            "Why Relevant": contact.why_relevant,
+            "Confidence (%)": Math.round(contact.confidence * 100),
+          }))
+        )
+      );
+
+      const ftoRows = result.fto_considerations.map((item, index) => ({
+        Priority: index + 1,
+        Consideration: item,
+      }));
+      const assumptionsRows = result.assumptions.map((item, index) => ({
+        Priority: index + 1,
+        Assumption: item,
+      }));
+      const inputRows = [
+        {
+          "Technical Summary Input": technicalSummary || "(none provided)",
+          "Areas To Avoid Input": areasToAvoid || "(none provided)",
+        },
+      ];
+
+      const sheetConfigs: Array<{ name: string; rows: Record<string, string | number>[] }> = [
+        { name: "Summary", rows: summaryRows },
+        { name: "Sectors", rows: sectorsRows },
+        { name: "Companies", rows: companyRows },
+        { name: "Contacts", rows: contactRows },
+        { name: "FTO", rows: ftoRows },
+        { name: "Assumptions", rows: assumptionsRows },
+        { name: "Input", rows: inputRows },
+      ];
+
+      for (const config of sheetConfigs) {
+        const safeRows = config.rows.length > 0 ? config.rows : [{ Notes: "No records available." }];
+        const sheet = XLSX.utils.json_to_sheet(safeRows);
+        sheet["!cols"] = Object.keys(safeRows[0]).map((columnKey) => {
+          const maxLength = Math.max(
+            columnKey.length,
+            ...safeRows.map((row) => String(row[columnKey] ?? "").length)
+          );
+          return { wch: Math.min(Math.max(maxLength + 2, 14), 60) };
+        });
+        XLSX.utils.book_append_sheet(workbook, sheet, config.name);
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      XLSX.writeFile(workbook, `licensing-intelligence-${timestamp}.xlsx`);
+    } catch (exportError) {
+      setError(exportError instanceof Error ? exportError.message : "Failed to export Excel file.");
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -140,6 +247,18 @@ export default function LicensingPage() {
 
         {result && (
           <div className="space-y-6">
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleExportToExcel}
+                disabled={exporting}
+                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300"
+              >
+                <Download className="h-4 w-4" />
+                {exporting ? "Exporting..." : "Export to Excel"}
+              </button>
+            </div>
+
             <Card>
               <CardHeader>
                 <CardTitle>Technology Summary</CardTitle>
@@ -196,11 +315,7 @@ export default function LicensingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {[
-                  { label: "Large Enterprise", key: "large" as const },
-                  { label: "Mid-Size Company", key: "mid_size" as const },
-                  { label: "Small or Niche Company", key: "small_or_niche" as const },
-                ].map((group) => (
+                {COMPANY_GROUPS.map((group) => (
                   <details
                     key={group.key}
                     className="rounded-lg border border-gray-200 bg-white"

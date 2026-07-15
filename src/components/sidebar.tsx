@@ -10,7 +10,7 @@ import {
   Key,
   BarChart3,
   Library,
-  FolderOpen,
+  Building2,
 } from "lucide-react";
 
 const navItems = [
@@ -19,7 +19,7 @@ const navItems = [
   { label: "Licensing Center", href: "/licensing", icon: Key },
   { label: "Reports", href: "/reports", icon: BarChart3 },
   { label: "Intellectual Property Directory", href: "/ip-directory", icon: Library },
-  { label: "OneDrive Access", href: "/onedrive-access", icon: FolderOpen },
+  { label: "Funding Sourcing", href: "/funding-sourcing", icon: Building2 },
 ];
 
 export function Sidebar() {
