@@ -27,6 +27,7 @@ export default function LicensingPage() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedbackInput, setFeedbackInput] = useState("");
   const [userFeedback, setUserFeedback] = useState("");
@@ -43,7 +44,7 @@ export default function LicensingPage() {
       });
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => null) as { error?: string } | null;
+        const errData = (await response.json().catch(() => null)) as { error?: string } | null;
         throw new Error(errData?.error ?? "Failed to generate report.");
       }
 
@@ -81,7 +82,7 @@ export default function LicensingPage() {
       });
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => null) as { error?: string } | null;
+        const errData = (await response.json().catch(() => null)) as { error?: string } | null;
         throw new Error(errData?.error ?? "Failed to regenerate report.");
       }
 
@@ -91,6 +92,52 @@ export default function LicensingPage() {
       setError(reportError instanceof Error ? reportError.message : "Something went wrong.");
     } finally {
       setRegenerating(false);
+    }
+  }
+
+  async function exportToExcel() {
+    if (!reportData) return;
+
+    setExporting(true);
+    setError(null);
+
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.utils.book_new();
+
+      const summarySheet = XLSX.utils.aoa_to_sheet([
+        ["Field", "Value"],
+        ["Technology Summary", reportData.oneSentenceSummary],
+        ["Technical Summary Input", technicalSummary],
+        ["FTO Constraints", ftoConstraints || ""],
+        ["Target Sectors", reportData.targetSectors.join(", ")],
+        ["AI Disclaimer", reportData.aiGeneratedDisclaimer],
+      ]);
+
+      const targetsSheet = XLSX.utils.json_to_sheet(
+        reportData.licensingTargets.map((target) => ({
+          Company: target.companyName,
+          Size: target.companySize,
+          "Fit Percentage": target.fitPercentage,
+          "Strategic Fit": target.strategicFit,
+          "Decision-Maker Roles": target.decisionMakerRoles.join(", "),
+        }))
+      );
+
+      const assumptionsSheet = XLSX.utils.json_to_sheet(
+        reportData.assumptions.map((assumption) => ({ Assumption: assumption }))
+      );
+
+      XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+      XLSX.utils.book_append_sheet(workbook, targetsSheet, "Licensing Targets");
+      XLSX.utils.book_append_sheet(workbook, assumptionsSheet, "Assumptions");
+
+      const fileName = `licensing-report-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    } catch (exportError) {
+      setError(exportError instanceof Error ? exportError.message : "Failed to export report.");
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -105,7 +152,6 @@ export default function LicensingPage() {
           </p>
         </div>
 
-        {/* Input card */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -148,7 +194,6 @@ export default function LicensingPage() {
           </CardContent>
         </Card>
 
-        {/* Output card */}
         <Card>
           <CardHeader>
             <CardTitle>Report Output</CardTitle>
@@ -159,8 +204,6 @@ export default function LicensingPage() {
               <p className="text-sm text-gray-500">Generate a report to view output.</p>
             ) : (
               <div className="space-y-6">
-
-                {/* Editable one-sentence summary */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Technology Summary</label>
                   <input
@@ -173,7 +216,6 @@ export default function LicensingPage() {
                   />
                 </div>
 
-                {/* Target sectors */}
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-700">Target Sectors</p>
                   <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
@@ -183,7 +225,6 @@ export default function LicensingPage() {
                   </ul>
                 </div>
 
-                {/* Licensing target cards */}
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-700">Licensing Targets</p>
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -214,7 +255,6 @@ export default function LicensingPage() {
                   </div>
                 </div>
 
-                {/* Assumptions */}
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-700">Assumptions</p>
                   <ul className="list-disc space-y-2 pl-5 text-sm text-gray-600">
@@ -224,12 +264,10 @@ export default function LicensingPage() {
                   </ul>
                 </div>
 
-                {/* Disclaimer */}
                 <p className="rounded-lg bg-amber-50 px-4 py-3 text-xs text-amber-700">
                   ⚠ {reportData.aiGeneratedDisclaimer}
                 </p>
 
-                {/* Feedback & regenerate */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">User Feedback</label>
                   <textarea
@@ -240,7 +278,7 @@ export default function LicensingPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={submitFeedback}
@@ -256,8 +294,15 @@ export default function LicensingPage() {
                   >
                     {regenerating ? "Regenerating..." : "Regenerate Report"}
                   </button>
+                  <button
+                    type="button"
+                    onClick={exportToExcel}
+                    disabled={exporting}
+                    className="rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:border-primary-100 disabled:bg-primary-50 disabled:text-primary-300"
+                  >
+                    {exporting ? "Exporting..." : "Export to Excel"}
+                  </button>
                 </div>
-
               </div>
             )}
           </CardContent>
