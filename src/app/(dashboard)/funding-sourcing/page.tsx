@@ -203,7 +203,7 @@ export default function FundingSourcingPage() {
       <Header />
       <div className="space-y-6 p-8">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Funding Sourcing</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Funding</h2>
           <p className="mt-1 text-sm text-gray-500">
             Review the first worksheet of the Terasaki Funding CRM and identify aligned funding targets.
           </p>
