@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
-import { getFundingOrganizations } from "@/lib/db";
+import { getFundingDataSourceInfo, getFundingOrganizations } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const fundingOrganizations = getFundingOrganizations();
-    return NextResponse.json(fundingOrganizations);
+    const fundingDataSourceInfo = getFundingDataSourceInfo();
+
+    return NextResponse.json({
+      organizations: fundingOrganizations,
+      lastUpdated: fundingDataSourceInfo.lastUpdated,
+    });
   } catch (error) {
     console.error("Failed to fetch funding organizations:", error);
     return NextResponse.json(

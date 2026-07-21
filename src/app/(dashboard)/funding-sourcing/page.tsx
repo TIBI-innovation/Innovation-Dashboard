@@ -80,6 +80,23 @@ function getOrganizationKey(organization: FundingOrganization): string {
   return organization.id || organization.organization_name;
 }
 
+function formatLastUpdated(value: string | null): string {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function FundingSourcingPage() {
   const [organizations, setOrganizations] = useState<FundingOrganization[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -88,6 +105,7 @@ export default function FundingSourcingPage() {
   const [organizationTypeFilter, setOrganizationTypeFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/funding-organizations", { cache: "no-store" })
@@ -99,8 +117,16 @@ export default function FundingSourcingPage() {
         return response.json();
       })
       .then((data) => {
-        const nextOrganizations = Array.isArray(data) ? (data as FundingOrganization[]) : [];
+        const payload = data as
+          | FundingOrganization[]
+          | { organizations?: FundingOrganization[]; lastUpdated?: string | null };
+        const nextOrganizations = Array.isArray(payload)
+          ? payload
+          : payload.organizations ?? [];
+        const nextLastUpdated = Array.isArray(payload) ? null : payload.lastUpdated ?? null;
+
         setOrganizations(nextOrganizations);
+        setLastUpdated(nextLastUpdated);
         setSelectedId(nextOrganizations[0] ? getOrganizationKey(nextOrganizations[0]) : "");
         setLoading(false);
       })
@@ -207,6 +233,11 @@ export default function FundingSourcingPage() {
           <p className="mt-1 text-sm text-gray-500">
             Review the first worksheet of the Terasaki Funding CRM and identify aligned funding targets.
           </p>
+          {lastUpdated ? (
+            <p className="mt-1 text-xs text-gray-400">
+              Data source last updated {formatLastUpdated(lastUpdated)}
+            </p>
+          ) : null}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

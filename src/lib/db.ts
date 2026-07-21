@@ -129,6 +129,23 @@ function getFirstValue(row: Record<string, unknown>, keys: string[]): string {
   return "";
 }
 
+function getDataFileLastUpdated(fileName: string): string | null {
+  const fullPath = path.join(DATA_FOLDER_PATH, fileName);
+  if (!fs.existsSync(fullPath)) {
+    return null;
+  }
+
+  const stats = fs.statSync(fullPath);
+  return stats.mtime.toISOString();
+}
+
+export function getFundingDataSourceInfo(): { fileName: string; lastUpdated: string | null } {
+  return {
+    fileName: FUNDING_DATA_FILE,
+    lastUpdated: getDataFileLastUpdated(FUNDING_DATA_FILE),
+  };
+}
+
 export function getTechnologies(): TechnologyRow[] {
   const rows = readTabularRows(IDF_DATA_FILE);
   return rows
