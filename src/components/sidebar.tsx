@@ -15,10 +15,10 @@ import {
 
 const navItems = [
   { label: "Overview", href: "/", icon: LayoutDashboard },
-  { label: "Invention Disclosure", href: "/disclosures", icon: Lightbulb },
-  { label: "Licensing Center", href: "/licensing", icon: Key },
-  { label: "Reports", href: "/reports", icon: BarChart3 },
   { label: "Intellectual Property Directory", href: "/ip-directory", icon: Library },
+  { label: "Invention Disclosure", href: "/disclosures", icon: Lightbulb },
+  { label: "Reports", href: "/reports", icon: BarChart3 },
+  { label: "Licensing Center", href: "/licensing", icon: Key },
   { label: "Funding", href: "/funding-sourcing", icon: Building2 },
 ];
 

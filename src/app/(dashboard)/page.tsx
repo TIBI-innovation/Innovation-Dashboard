@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Header } from "@/components/header";
-import { InnovationPipeline } from "@/components/innovation-pipeline";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { FileText, Lightbulb, Award } from "lucide-react";
+import { FileText, Lightbulb, AlertCircle } from "lucide-react";
+import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 interface PatentRow {
   patent_number: string;
@@ -19,26 +19,68 @@ interface TechnologyRow {
   technology_category: string;
 }
 
-function mostCommonSector(rows: { technology_category: string }[]): { sector: string; count: number } | null {
-  const counts: Record<string, number> = {};
-  for (const r of rows) {
-    const cat = r.technology_category || "(uncategorized)";
-    counts[cat] = (counts[cat] || 0) + 1;
-  }
-  let best: { sector: string; count: number } | null = null;
-  for (const sector of Object.keys(counts)) {
-    const count = counts[sector];
-    if (!best || count > best.count) best = { sector, count };
-  }
-  return best;
+interface SectorCount {
+  sector: string;
+  count: number;
 }
 
-function getStatusBadgeClass(status: string): string {
-  const normalized = status.trim().toUpperCase();
-  if (normalized === "URGENT") return "bg-red-100 text-red-700";
-  if (normalized === "BLOCKED") return "bg-yellow-100 text-yellow-700";
-  return "bg-blue-100 text-blue-700";
+const SECTOR_COLORS = [
+  "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
+  "#EC4899", "#14B8A6", "#F97316", "#06B6D4", "#6366F1",
+  "#84CC16", "#A855F7",
+];
+
+function getSectorColor(sector: string, allSectors: string[]): string {
+  const idx = allSectors.indexOf(sector);
+  return SECTOR_COLORS[idx % SECTOR_COLORS.length];
 }
+
+function buildSectorCounts(records: { technology_category: string }[]): SectorCount[] {
+  const map = new Map<string, number>();
+  for (const r of records) {
+    const cat = r.technology_category || "(uncategorized)";
+    map.set(cat, (map.get(cat) || 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([sector, count]) => ({ sector, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+const renderLabel = ({
+  sector,
+  percent,
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+}: {
+  sector: string;
+  percent: number;
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+}) => {
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 1.4;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#374151"
+      textAnchor={x > cx ? "start" : "end"}
+      dominantBaseline="central"
+      fontSize={11}
+    >
+      {sector} ({(percent * 100).toFixed(0)}%)
+    </text>
+  );
+};
 
 export default function DashboardPage() {
   const [technologies, setTechnologies] = useState<TechnologyRow[]>([]);
@@ -58,49 +100,20 @@ export default function DashboardPage() {
       .catch(() => setLoaded(true));
   }, []);
 
-  const topIdf = useMemo(() => mostCommonSector(technologies), [technologies]);
-  const topPatent = useMemo(() => mostCommonSector(patentRows), [patentRows]);
+  const idfSectorCounts = useMemo(() => buildSectorCounts(technologies), [technologies]);
+  const patentSectorCounts = useMemo(() => buildSectorCounts(patentRows), [patentRows]);
+
+  const allSectors = useMemo(() => {
+    const set = new Set<string>();
+    idfSectorCounts.forEach((s) => set.add(s.sector));
+    patentSectorCounts.forEach((s) => set.add(s.sector));
+    return Array.from(set).sort();
+  }, [idfSectorCounts, patentSectorCounts]);
+
   const urgentPatents = useMemo(
     () => patentRows.filter((p) => (p.status || "").trim().toUpperCase() === "URGENT"),
     [patentRows]
   );
-
-  const statCards = [
-    {
-      title: "Total Patents",
-      description: "Count of issued patents in your portfolio",
-      value: loaded ? patentRows.length : "—",
-      icon: FileText,
-    },
-    {
-      title: "Invention Disclosures",
-      description: "Innovation disclosures submitted to date",
-      value: loaded ? technologies.length : "—",
-      icon: Lightbulb,
-    },
-    {
-      title: "Top Technology Sector",
-      description: "Most active technology area",
-      icon: Award,
-      render: () => (
-        <div className="space-y-1">
-          {topIdf && (
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">IDFs:</span> {topIdf.sector}{" "}
-              <span className="text-gray-400">({topIdf.count})</span>
-            </p>
-          )}
-          {topPatent && (
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">Patents:</span> {topPatent.sector}{" "}
-              <span className="text-gray-400">({topPatent.count})</span>
-            </p>
-          )}
-          {!loaded && <p className="text-sm text-gray-400">Loading...</p>}
-        </div>
-      ),
-    },
-  ];
 
   return (
     <>
@@ -111,40 +124,123 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-gray-500">Here is what is happening across your portfolio.</p>
         </div>
 
-        <InnovationPipeline />
-
-        {/* Stat cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          {statCards.map((stat) => (
-            <Card key={stat.title}>
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Column 1: Invention Disclosures */}
+          <div className="space-y-4">
+            <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <stat.icon className="h-5 w-5 text-primary-600" />
-                  <CardTitle>{stat.title}</CardTitle>
+                  <Lightbulb className="h-5 w-5 text-primary-600" />
+                  <CardTitle>Invention Disclosures</CardTitle>
                 </div>
-                <CardDescription>{stat.description}</CardDescription>
+                <CardDescription>Innovation disclosures submitted to date</CardDescription>
               </CardHeader>
               <CardContent>
-                {"render" in stat && stat.render ? (
-                  stat.render()
+                <p className="text-2xl font-bold text-gray-900">{loaded ? technologies.length : "—"}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>IDFs by Technology Sector</CardTitle>
+                <CardDescription>Distribution across technology sectors</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!loaded ? (
+                  <p className="py-4 text-center text-sm text-gray-400">Loading...</p>
+                ) : idfSectorCounts.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-gray-400">No IDF data available.</p>
                 ) : (
-                  <>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  </>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <RePieChart>
+                      <Pie
+                        data={idfSectorCounts}
+                        dataKey="count"
+                        nameKey="sector"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        innerRadius={35}
+                        label={renderLabel}
+                        labelLine
+                      >
+                        {idfSectorCounts.map((entry) => (
+                          <Cell
+                            key={entry.sector}
+                            fill={getSectorColor(entry.sector, allSectors)}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                    </RePieChart>
+                  </ResponsiveContainer>
                 )}
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Column 2: Patents */}
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary-600" />
+                  <CardTitle>Total Patents</CardTitle>
+                </div>
+                <CardDescription>Count of issued patents in your portfolio</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-gray-900">{loaded ? patentRows.length : "—"}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Patents by Technology Sector</CardTitle>
+                <CardDescription>Distribution across technology sectors</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!loaded ? (
+                  <p className="py-4 text-center text-sm text-gray-400">Loading...</p>
+                ) : patentSectorCounts.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-gray-400">No patent data available.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <RePieChart>
+                      <Pie
+                        data={patentSectorCounts}
+                        dataKey="count"
+                        nameKey="sector"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        innerRadius={35}
+                        label={renderLabel}
+                        labelLine
+                      >
+                        {patentSectorCounts.map((entry) => (
+                          <Cell
+                            key={entry.sector}
+                            fill={getSectorColor(entry.sector, allSectors)}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                    </RePieChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Column 3: Urgent Deadlines */}
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary-600" />
+                <AlertCircle className="h-5 w-5 text-red-500" />
                 <CardTitle>Upcoming Deadlines</CardTitle>
               </div>
-              <CardDescription>Patents marked URGENT and their action notes</CardDescription>
+              <CardDescription>Patents marked URGENT requiring immediate action</CardDescription>
             </CardHeader>
             <CardContent>
               {!loaded ? (
@@ -154,93 +250,22 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-3">
                   {urgentPatents.map((p) => (
-                    <div key={p.patent_number} className="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{p.patent_number}</p>
-                        <p className="text-xs text-gray-500">{p.technology_category}</p>
-                        <p className="mt-1 text-xs text-gray-600">{p.notes || "No deadline provided."}</p>
-                      </div>
-                      {p.status ? (
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClass(
-                            p.status
-                          )}`}
-                        >
-                          {p.status}
+                    <div
+                      key={p.patent_number}
+                      className="border-b border-gray-100 pb-3 last:border-0 last:pb-0"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900">{p.patent_number}</p>
+                          <p className="text-xs text-gray-500">{p.technology_category}</p>
+                          <p className="mt-1 text-xs text-gray-600">{p.notes || "No deadline provided."}</p>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                          URGENT
                         </span>
-                      ) : (
-                        <span className="text-xs text-gray-400">—</span>
-                      )}
+                      </div>
                     </div>
                   ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-primary-600" />
-                <CardTitle>Sector Breakdown</CardTitle>
-              </div>
-              <CardDescription>Most common technology sectors</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!loaded ? (
-                <p className="py-4 text-center text-sm text-gray-400">Loading data...</p>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-medium uppercase text-gray-400">IDFs</p>
-                    <div className="mt-1 space-y-1">
-                      {technologies.length === 0 ? (
-                        <p className="text-sm text-gray-400">No data</p>
-                      ) : (
-                        (() => {
-                          const counts: Record<string, number> = {};
-                          technologies.forEach((t) => {
-                            const cat = t.technology_category || "(uncategorized)";
-                            counts[cat] = (counts[cat] || 0) + 1;
-                          });
-                          return Object.entries(counts)
-                            .sort((a, b) => b[1] - a[1])
-                            .slice(0, 4)
-                            .map(([sector, count]) => (
-                              <div key={sector} className="flex items-center justify-between text-sm">
-                                <span className="text-gray-700">{sector}</span>
-                                <span className="font-medium text-gray-900">{count}</span>
-                              </div>
-                            ));
-                        })()
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium uppercase text-gray-400">Patents</p>
-                    <div className="mt-1 space-y-1">
-                      {patentRows.length === 0 ? (
-                        <p className="text-sm text-gray-400">No data</p>
-                      ) : (
-                        (() => {
-                          const counts: Record<string, number> = {};
-                          patentRows.forEach((p) => {
-                            const cat = p.technology_category || "(uncategorized)";
-                            counts[cat] = (counts[cat] || 0) + 1;
-                          });
-                          return Object.entries(counts)
-                            .sort((a, b) => b[1] - a[1])
-                            .slice(0, 4)
-                            .map(([sector, count]) => (
-                              <div key={sector} className="flex items-center justify-between text-sm">
-                                <span className="text-gray-700">{sector}</span>
-                                <span className="font-medium text-gray-900">{count}</span>
-                              </div>
-                            ));
-                        })()
-                      )}
-                    </div>
-                  </div>
                 </div>
               )}
             </CardContent>
