@@ -4,13 +4,19 @@ import { useState, useEffect, useMemo } from "react";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { FileText, Lightbulb, AlertCircle } from "lucide-react";
-import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { PieChart as RePieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface PatentRow {
   patent_number: string;
   technology_category: string;
   status: string;
   notes?: string;
+}
+
+interface TechnologyRow {
+  idf_number: string;
+  created_by: string;
+  technology_category: string;
 }
 
 interface SectorCount {
@@ -40,66 +46,26 @@ function buildSectorCounts(records: { technology_category: string }[]): SectorCo
     .sort((a, b) => b.count - a.count);
 }
 
-const renderLabel = ({
-  sector,
-  percent,
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-}: {
-  sector: string;
-  percent: number;
-  cx: number;
-  cy: number;
-  midAngle: number;
-  innerRadius: number;
-  outerRadius: number;
-}) => {
-  const RADIAN = Math.PI / 180;
-  const radius = innerRadius + (outerRadius - innerRadius) * 1.4;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-  return (
-    <text
-      x={x}
-      y={y}
-      fill="#374151"
-      textAnchor={x > cx ? "start" : "end"}
-      dominantBaseline="central"
-      fontSize={11}
-    >
-      {sector} ({(percent * 100).toFixed(0)}%)
-    </text>
-  );
-};
-
-export default function IPDirectoryPage() {
+export default function DashboardPage() {
   const [technologies, setTechnologies] = useState<TechnologyRow[]>([]);
-  const [patents, setPatents] = useState<PatentRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isIdfSectionOpen, setIsIdfSectionOpen] = useState(false);
-  const [isPatentSectionOpen, setIsPatentSectionOpen] = useState(false);
-  const [selectedIdfSector, setSelectedIdfSector] = useState<string | null>(null);
-  const [selectedPatentSector, setSelectedPatentSector] = useState<string | null>(null);
+  const [patentRows, setPatentRows] = useState<PatentRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/technologies").then((r) => r.json()),
-      fetch("/api/patents").then((r) => r.json()),
+      fetch("/api/technologies", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/patents", { cache: "no-store" }).then((r) => r.json()),
     ])
       .then(([techs, pats]) => {
         setTechnologies(Array.isArray(techs) ? techs : []);
-        setPatents(Array.isArray(pats) ? pats : []);
-        setLoading(false);
+        setPatentRows(Array.isArray(pats) ? pats : []);
+        setLoaded(true);
       })
-      .catch(() => setLoading(false));
+      .catch(() => setLoaded(true));
   }, []);
 
   const idfSectorCounts = useMemo(() => buildSectorCounts(technologies), [technologies]);
-  const patentSectorCounts = useMemo(() => buildSectorCounts(patents), [patents]);
+  const patentSectorCounts = useMemo(() => buildSectorCounts(patentRows), [patentRows]);
 
   const allSectors = useMemo(() => {
     const set = new Set<string>();
@@ -108,148 +74,35 @@ export default function IPDirectoryPage() {
     return Array.from(set).sort();
   }, [idfSectorCounts, patentSectorCounts]);
 
-  const selectedIdfRecords = useMemo(() => {
-    if (!selectedIdfSector) return null;
-    return technologies.filter(
-      (t) => (t.technology_category || "(uncategorized)") === selectedIdfSector
-    );
-  }, [technologies, selectedIdfSector]);
-
-  const selectedPatentRecords = useMemo(() => {
-    if (!selectedPatentSector) return null;
-    return patents.filter(
-      (p) => (p.technology_category || "(uncategorized)") === selectedPatentSector
-    );
-  }, [patents, selectedPatentSector]);
   const urgentPatents = useMemo(
-    () => patents.filter((p) => (p.status || "").trim().toUpperCase() === "URGENT"),
-    [patents]
+    () => patentRows.filter((p) => (p.status || "").trim().toUpperCase() === "URGENT"),
+    [patentRows]
   );
-
-  function toggleIdfSector(sector: string) {
-    setSelectedIdfSector((prev) => (prev === sector ? null : sector));
-  }
-
-  function togglePatentSector(sector: string) {
-    setSelectedPatentSector((prev) => (prev === sector ? null : sector));
-  }
 
   return (
     <>
       <Header />
-      <div className="space-y-10 p-8">
-        {/* Page header */}
+      <div className="space-y-6 p-8">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Intellectual Property Directory</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Overview of invention disclosures and patents organized by technology sector.
-          </p>
+          <h2 className="text-xl font-semibold text-gray-900">Welcome back, Maddie</h2>
+          <p className="mt-1 text-sm text-gray-500">Here is what is happening across your portfolio.</p>
         </div>
 
-        {/* Section 1: IDFs by sector */}
-        <section>
-          <button
-            type="button"
-            onClick={() => setIsIdfSectionOpen((prev) => !prev)}
-            aria-expanded={isIdfSectionOpen}
-            className="mb-4 flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-left hover:bg-gray-50"
-          >
-            <span className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-primary-600" />
-              <h3 className="text-lg font-semibold text-gray-900">
-                Invention Disclosure Forms (IDFs) by Technology Sector
-              </h3>
-            </span>
-            {isIdfSectionOpen ? (
-              <ChevronUp className="h-5 w-5 text-gray-500" />
-            ) : (
-              <ChevronDown className="h-5 w-5 text-gray-500" />
-            )}
-          </button>
-
-          {isIdfSectionOpen &&
-            (loading ? (
-              <p className="text-sm text-gray-400">Loading IDF data…</p>
-            ) : idfSectorCounts.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-sm text-gray-400">No IDF data available.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {idfSectorCounts.map(({ sector, count }) => (
-                    <button
-                      key={sector}
-                      type="button"
-                      onClick={() => toggleIdfSector(sector)}
-                      className="text-left"
-                    >
-                      <Card
-                        className={`cursor-pointer transition-all hover:shadow-md ${
-                          selectedIdfSector === sector ? "ring-2 ring-primary-500" : ""
-                        }`}
-                      >
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm">{sector}</CardTitle>
-                            {selectedIdfSector === sector ? (
-                              <ChevronUp className="h-4 w-4 text-gray-400" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 text-gray-400" />
-                            )}
-                          </div>
-                          <CardDescription>
-                            <span className="text-2xl font-bold text-gray-900">{count}</span>{" "}
-                            IDF{count !== 1 ? "s" : ""}
-                          </CardDescription>
-                        </CardHeader>
-                      </Card>
-                    </button>
-                  ))}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Column 1: Invention Disclosures */}
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-primary-600" />
+                  <CardTitle>Invention Disclosures</CardTitle>
                 </div>
-
-                {/* IDF detail panel */}
-                {selectedIdfRecords && selectedIdfRecords.length > 0 && (
-                  <Card className="mt-4">
-                    <CardHeader>
-                      <CardTitle>{selectedIdfSector}</CardTitle>
-                      <CardDescription>
-                        {selectedIdfRecords.length} disclosure
-                        {selectedIdfRecords.length !== 1 ? "s" : ""}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                          <thead>
-                            <tr className="border-b border-gray-200 text-xs uppercase text-gray-400">
-                              <th className="pb-2 pr-4 font-medium">IDF Number</th>
-                              <th className="pb-2 pr-4 font-medium">Created By</th>
-                              <th className="pb-2 font-medium">Technology Sector</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {selectedIdfRecords.map((r) => (
-                              <tr key={r.idf_number} className="border-b border-gray-100 last:border-0">
-                                <td className="py-2.5 pr-4 font-medium text-gray-900">
-                                  {r.idf_number}
-                                </td>
-                                <td className="py-2.5 pr-4 text-gray-700">
-                                  {r.created_by || "—"}
-                                </td>
-                                <td className="py-2.5 text-gray-700">
-                                  {r.technology_category || "—"}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                <CardDescription>Innovation disclosures submitted to date</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-gray-900">{loaded ? technologies.length : "—"}</p>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>
@@ -262,18 +115,16 @@ export default function IPDirectoryPage() {
                 ) : idfSectorCounts.length === 0 ? (
                   <p className="py-4 text-center text-sm text-gray-400">No IDF data available.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height={280}>
-                    <RePieChart>
+                  <ResponsiveContainer width="100%" height={340}>
+                    <RePieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                       <Pie
                         data={idfSectorCounts}
                         dataKey="count"
                         nameKey="sector"
                         cx="50%"
-                        cy="50%"
+                        cy="42%"
                         outerRadius={80}
                         innerRadius={35}
-                        label={renderLabel}
-                        labelLine
                       >
                         {idfSectorCounts.map((entry) => (
                           <Cell
@@ -283,6 +134,17 @@ export default function IPDirectoryPage() {
                         ))}
                       </Pie>
                       <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                      <Legend
+                        layout="horizontal"
+                        align="center"
+                        verticalAlign="bottom"
+                        iconSize={10}
+                        wrapperStyle={{ fontSize: 12, lineHeight: "18px", paddingTop: 12 }}
+                        formatter={(value, entry) => {
+                          const percent = (entry?.payload as unknown as { percent?: number })?.percent;
+                          return `${value} (${percent ? (percent * 100).toFixed(0) : 0}%)`;
+                        }}
+                      />
                     </RePieChart>
                   </ResponsiveContainer>
                 )}
@@ -298,61 +160,12 @@ export default function IPDirectoryPage() {
                   <FileText className="h-5 w-5 text-primary-600" />
                   <CardTitle>Total Patents</CardTitle>
                 </div>
-
-                {/* Patent detail panel */}
-                {selectedPatentRecords && selectedPatentRecords.length > 0 && (
-                  <Card className="mt-4">
-                    <CardHeader>
-                      <CardTitle>{selectedPatentSector}</CardTitle>
-                      <CardDescription>
-                        {selectedPatentRecords.length} record
-                        {selectedPatentRecords.length !== 1 ? "s" : ""}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                          <thead>
-                            <tr className="border-b border-gray-200 text-xs uppercase text-gray-400">
-                              <th className="pb-2 pr-4 font-medium">Patent Number</th>
-                              <th className="pb-2 pr-4 font-medium">Technology Sector</th>
-                              <th className="pb-2 pr-4 font-medium">Status</th>
-                              <th className="pb-2 font-medium">Deadline Notes</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {selectedPatentRecords.map((r) => (
-                              <tr key={r.patent_number} className="border-b border-gray-100 last:border-0">
-                                <td className="py-2.5 pr-4 font-medium text-gray-900">
-                                  {r.patent_number}
-                                </td>
-                                <td className="py-2.5 pr-4 text-gray-700">
-                                  {r.technology_category || "—"}
-                                </td>
-                                <td className="py-2.5 pr-4">
-                                  {r.status ? (
-                                    <span
-                                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClass(
-                                        r.status
-                                      )}`}
-                                    >
-                                      {r.status}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-400">—</span>
-                                  )}
-                                </td>
-                                <td className="py-2.5 text-gray-600">
-                                  {r.notes || <span className="text-gray-400">—</span>}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                <CardDescription>Count of issued patents in your portfolio</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-gray-900">{loaded ? patentRows.length : "—"}</p>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>
@@ -365,18 +178,16 @@ export default function IPDirectoryPage() {
                 ) : patentSectorCounts.length === 0 ? (
                   <p className="py-4 text-center text-sm text-gray-400">No patent data available.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height={280}>
-                    <RePieChart>
+                  <ResponsiveContainer width="100%" height={340}>
+                    <RePieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                       <Pie
                         data={patentSectorCounts}
                         dataKey="count"
                         nameKey="sector"
                         cx="50%"
-                        cy="50%"
+                        cy="42%"
                         outerRadius={80}
                         innerRadius={35}
-                        label={renderLabel}
-                        labelLine
                       >
                         {patentSectorCounts.map((entry) => (
                           <Cell
@@ -386,6 +197,17 @@ export default function IPDirectoryPage() {
                         ))}
                       </Pie>
                       <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                      <Legend
+                        layout="horizontal"
+                        align="center"
+                        verticalAlign="bottom"
+                        iconSize={10}
+                        wrapperStyle={{ fontSize: 12, lineHeight: "18px", paddingTop: 12 }}
+                        formatter={(value, entry) => {
+                          const percent = (entry?.payload as unknown as { percent?: number })?.percent;
+                          return `${value} (${percent ? (percent * 100).toFixed(0) : 0}%)`;
+                        }}
+                      />
                     </RePieChart>
                   </ResponsiveContainer>
                 )}
