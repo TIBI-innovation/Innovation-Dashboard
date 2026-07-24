@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { FileText, Lightbulb, AlertCircle } from "lucide-react";
-import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { PieChart as RePieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface PatentRow {
   patent_number: string;
@@ -45,42 +45,6 @@ function buildSectorCounts(records: { technology_category: string }[]): SectorCo
     .map(([sector, count]) => ({ sector, count }))
     .sort((a, b) => b.count - a.count);
 }
-
-const renderLabel = ({
-  sector,
-  percent,
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-}: {
-  sector: string;
-  percent: number;
-  cx: number;
-  cy: number;
-  midAngle: number;
-  innerRadius: number;
-  outerRadius: number;
-}) => {
-  const RADIAN = Math.PI / 180;
-  const radius = innerRadius + (outerRadius - innerRadius) * 1.4;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-  return (
-    <text
-      x={x}
-      y={y}
-      fill="#374151"
-      textAnchor={x > cx ? "start" : "end"}
-      dominantBaseline="central"
-      fontSize={11}
-    >
-      {sector} ({(percent * 100).toFixed(0)}%)
-    </text>
-  );
-};
 
 export default function DashboardPage() {
   const [technologies, setTechnologies] = useState<TechnologyRow[]>([]);
@@ -151,18 +115,16 @@ export default function DashboardPage() {
                 ) : idfSectorCounts.length === 0 ? (
                   <p className="py-4 text-center text-sm text-gray-400">No IDF data available.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height={280}>
-                    <RePieChart>
+                  <ResponsiveContainer width="100%" height={340}>
+                    <RePieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                       <Pie
                         data={idfSectorCounts}
                         dataKey="count"
                         nameKey="sector"
                         cx="50%"
-                        cy="50%"
+                        cy="42%"
                         outerRadius={80}
                         innerRadius={35}
-                        label={renderLabel}
-                        labelLine
                       >
                         {idfSectorCounts.map((entry) => (
                           <Cell
@@ -172,6 +134,17 @@ export default function DashboardPage() {
                         ))}
                       </Pie>
                       <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                      <Legend
+                        layout="horizontal"
+                        align="center"
+                        verticalAlign="bottom"
+                        iconSize={10}
+                        wrapperStyle={{ fontSize: 12, lineHeight: "18px", paddingTop: 12 }}
+                        formatter={(value, entry) => {
+                          const percent = (entry?.payload as unknown as { percent?: number })?.percent;
+                          return `${value} (${percent ? (percent * 100).toFixed(0) : 0}%)`;
+                        }}
+                      />
                     </RePieChart>
                   </ResponsiveContainer>
                 )}
@@ -205,18 +178,16 @@ export default function DashboardPage() {
                 ) : patentSectorCounts.length === 0 ? (
                   <p className="py-4 text-center text-sm text-gray-400">No patent data available.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height={280}>
-                    <RePieChart>
+                  <ResponsiveContainer width="100%" height={340}>
+                    <RePieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                       <Pie
                         data={patentSectorCounts}
                         dataKey="count"
                         nameKey="sector"
                         cx="50%"
-                        cy="50%"
+                        cy="42%"
                         outerRadius={80}
                         innerRadius={35}
-                        label={renderLabel}
-                        labelLine
                       >
                         {patentSectorCounts.map((entry) => (
                           <Cell
@@ -226,6 +197,17 @@ export default function DashboardPage() {
                         ))}
                       </Pie>
                       <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                      <Legend
+                        layout="horizontal"
+                        align="center"
+                        verticalAlign="bottom"
+                        iconSize={10}
+                        wrapperStyle={{ fontSize: 12, lineHeight: "18px", paddingTop: 12 }}
+                        formatter={(value, entry) => {
+                          const percent = (entry?.payload as unknown as { percent?: number })?.percent;
+                          return `${value} (${percent ? (percent * 100).toFixed(0) : 0}%)`;
+                        }}
+                      />
                     </RePieChart>
                   </ResponsiveContainer>
                 )}
