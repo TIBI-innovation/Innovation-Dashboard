@@ -9,7 +9,7 @@ export const FILE_PATHS = {
   PATENTS_DATABASE: "sanitized-patents-database.csv",
 
   // Folders
-  IDF_ASSESSMENTS: "IDF assessments",
+  IDF_ASSESSMENTS: "Patentability Assessments (Dashboard Access)",
   PATENTS_FOLDER: "PATENTS at TIBI",
   FAKE_DATA_FOLDER: "Fake data for AI tool POC",
 
