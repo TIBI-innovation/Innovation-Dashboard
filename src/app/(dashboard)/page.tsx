@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { FileText, Lightbulb, AlertCircle } from "lucide-react";
-import { PieChart as RePieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 interface PatentRow {
   patent_number: string;
@@ -44,6 +44,11 @@ function buildSectorCounts(records: { technology_category: string }[]): SectorCo
   return Array.from(map.entries())
     .map(([sector, count]) => ({ sector, count }))
     .sort((a, b) => b.count - a.count);
+}
+
+function sectorPercent(count: number, all: SectorCount[]): number {
+  const total = all.reduce((sum, s) => sum + s.count, 0);
+  return total ? Math.round((count / total) * 100) : 0;
 }
 
 export default function DashboardPage() {
@@ -88,9 +93,9 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-gray-500">Here is what is happening across your portfolio.</p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_1.15fr_0.7fr]">
           {/* Column 1: Invention Disclosures */}
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -115,45 +120,54 @@ export default function DashboardPage() {
                 ) : idfSectorCounts.length === 0 ? (
                   <p className="py-4 text-center text-sm text-gray-400">No IDF data available.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height={340}>
-                    <RePieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                      <Pie
-                        data={idfSectorCounts}
-                        dataKey="count"
-                        nameKey="sector"
-                        cx="50%"
-                        cy="42%"
-                        outerRadius={80}
-                        innerRadius={35}
-                      >
-                        {idfSectorCounts.map((entry) => (
-                          <Cell
-                            key={entry.sector}
-                            fill={getSectorColor(entry.sector, allSectors)}
+                  <div className="flex items-center gap-4">
+                    <div className="h-[140px] w-[110px] shrink-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RePieChart>
+                          <Pie
+                            data={idfSectorCounts}
+                            dataKey="count"
+                            nameKey="sector"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={50}
+                            innerRadius={22}
+                          >
+                            {idfSectorCounts.map((entry) => (
+                              <Cell
+                                key={entry.sector}
+                                fill={getSectorColor(entry.sector, allSectors)}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                        </RePieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <ul className="min-w-0 flex-1 space-y-1.5 overflow-y-auto" style={{ maxHeight: 140 }}>
+                      {idfSectorCounts.map((entry) => (
+                        <li key={entry.sector} className="flex min-w-0 items-center gap-1.5">
+                          <span
+                            className="h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: getSectorColor(entry.sector, allSectors) }}
                           />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value: number, name: string) => [value, name]} />
-                      <Legend
-                        layout="horizontal"
-                        align="center"
-                        verticalAlign="bottom"
-                        iconSize={10}
-                        wrapperStyle={{ fontSize: 12, lineHeight: "18px", paddingTop: 12 }}
-                        formatter={(value, entry) => {
-                          const percent = (entry?.payload as unknown as { percent?: number })?.percent;
-                          return `${value} (${percent ? (percent * 100).toFixed(0) : 0}%)`;
-                        }}
-                      />
-                    </RePieChart>
-                  </ResponsiveContainer>
+                          <span
+                            className="truncate text-xs text-gray-700"
+                            title={`${entry.sector} (${sectorPercent(entry.count, idfSectorCounts)}%)`}
+                          >
+                            {entry.sector} ({sectorPercent(entry.count, idfSectorCounts)}%)
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
           {/* Column 2: Patents */}
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -178,38 +192,47 @@ export default function DashboardPage() {
                 ) : patentSectorCounts.length === 0 ? (
                   <p className="py-4 text-center text-sm text-gray-400">No patent data available.</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height={340}>
-                    <RePieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                      <Pie
-                        data={patentSectorCounts}
-                        dataKey="count"
-                        nameKey="sector"
-                        cx="50%"
-                        cy="42%"
-                        outerRadius={80}
-                        innerRadius={35}
-                      >
-                        {patentSectorCounts.map((entry) => (
-                          <Cell
-                            key={entry.sector}
-                            fill={getSectorColor(entry.sector, allSectors)}
+                  <div className="flex items-center gap-4">
+                    <div className="h-[140px] w-[110px] shrink-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RePieChart>
+                          <Pie
+                            data={patentSectorCounts}
+                            dataKey="count"
+                            nameKey="sector"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={50}
+                            innerRadius={22}
+                          >
+                            {patentSectorCounts.map((entry) => (
+                              <Cell
+                                key={entry.sector}
+                                fill={getSectorColor(entry.sector, allSectors)}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                        </RePieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <ul className="min-w-0 flex-1 space-y-1.5 overflow-y-auto" style={{ maxHeight: 140 }}>
+                      {patentSectorCounts.map((entry) => (
+                        <li key={entry.sector} className="flex min-w-0 items-center gap-1.5">
+                          <span
+                            className="h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: getSectorColor(entry.sector, allSectors) }}
                           />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value: number, name: string) => [value, name]} />
-                      <Legend
-                        layout="horizontal"
-                        align="center"
-                        verticalAlign="bottom"
-                        iconSize={10}
-                        wrapperStyle={{ fontSize: 12, lineHeight: "18px", paddingTop: 12 }}
-                        formatter={(value, entry) => {
-                          const percent = (entry?.payload as unknown as { percent?: number })?.percent;
-                          return `${value} (${percent ? (percent * 100).toFixed(0) : 0}%)`;
-                        }}
-                      />
-                    </RePieChart>
-                  </ResponsiveContainer>
+                          <span
+                            className="truncate text-xs text-gray-700"
+                            title={`${entry.sector} (${sectorPercent(entry.count, patentSectorCounts)}%)`}
+                          >
+                            {entry.sector} ({sectorPercent(entry.count, patentSectorCounts)}%)
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </CardContent>
             </Card>
