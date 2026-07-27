@@ -10,6 +10,8 @@ export const FILE_PATHS = {
 
   // Folders
   IDF_ASSESSMENTS: "Patentability Assessments (Dashboard Access)",
+  IDF_ASSESSMENTS_TEMPLATE_FOLDER: "IDF Assessments",
+  IDF_ASSESSMENTS_TEMPLATE: "IDF Assessments/General Patentability Assessment IDFX.docx",
   PATENTS_FOLDER: "PATENTS at TIBI",
   FAKE_DATA_FOLDER: "Fake data for AI tool POC",
 

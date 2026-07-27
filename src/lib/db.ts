@@ -6,6 +6,8 @@ export interface TechnologyRow {
   idf_number: string;
   created_by: string;
   technology_category: string;
+  pipeline_status: string;
+  deadline: string;
 }
 
 export interface PatentRow {
@@ -146,6 +148,20 @@ export function getFundingDataSourceInfo(): { fileName: string; lastUpdated: str
   };
 }
 
+export function getIdfDataSourceInfo(): { fileName: string; lastUpdated: string | null } {
+  return {
+    fileName: IDF_DATA_FILE,
+    lastUpdated: getDataFileLastUpdated(IDF_DATA_FILE),
+  };
+}
+
+export function getPatentDataSourceInfo(): { fileName: string; lastUpdated: string | null } {
+  return {
+    fileName: PATENT_DATA_FILE,
+    lastUpdated: getDataFileLastUpdated(PATENT_DATA_FILE),
+  };
+}
+
 export function getTechnologies(): TechnologyRow[] {
   const rows = readTabularRows(IDF_DATA_FILE);
   return rows
@@ -157,6 +173,8 @@ export function getTechnologies(): TechnologyRow[] {
         "Technology Category ",
         "technology_category",
       ]),
+      pipeline_status: getFirstValue(row, ["Pipeline Status", "pipeline_status"]),
+      deadline: getFirstValue(row, ["Deadline", "deadline"]),
     }))
     .filter((row) => row.idf_number || row.created_by || row.technology_category);
 }

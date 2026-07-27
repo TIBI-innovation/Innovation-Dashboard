@@ -64,10 +64,15 @@ export async function GET(request: Request) {
 
     const stats = await fs.promises.stat(resolvedPath);
     if (!stats.isDirectory()) {
-      return NextResponse.json(
-        { error: "Path is not a directory." },
-        { status: 400 }
-      );
+      const fileBuffer = await fs.promises.readFile(resolvedPath);
+      const fileName = path.basename(resolvedPath);
+      return new NextResponse(fileBuffer, {
+        headers: {
+          "Content-Disposition": `attachment; filename="${fileName}"`,
+          "Content-Type": "application/octet-stream",
+          "Content-Length": String(stats.size),
+        },
+      });
     }
 
     const entries = await readFolderEntries(resolvedPath, basePath);
