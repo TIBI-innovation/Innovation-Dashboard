@@ -4,21 +4,10 @@
  */
 
 export const FILE_PATHS = {
-  // CSV Data Files
-  IDF_DATABASE: "sanitized-idf-database.csv",
-  PATENTS_DATABASE: "sanitized-patents-database.csv",
-
   // Folders
-  IDF_ASSESSMENTS: "Patentability Assessments (Dashboard Access)",
-  IDF_ASSESSMENTS_TEMPLATE_FOLDER: "IDF Assessments",
-  IDF_ASSESSMENTS_TEMPLATE: "IDF Assessments/General Patentability Assessment IDFX.docx",
-  PATENTS_FOLDER: "PATENTS at TIBI",
-  FAKE_DATA_FOLDER: "Fake data for AI tool POC",
-
-  // Documents
-  IP_ASSESSMENT: "IP and Patent AI Tool Assessment.pptx",
-  PROTOCOL: "Potential SCOBY-Art Protocol.docx",
-  TIMELINE: "Proposed Timeline Jun 2026.docx",
+  IDF_ASSESSMENTS: "Dashboard Files/Patentability Assessments (Dashboard Access)",
+  IDF_ASSESSMENTS_TEMPLATE_FOLDER: "Dashboard Files/Patentability Assessments (Dashboard Access)",
+  IDF_ASSESSMENTS_TEMPLATE: "Dashboard Files/Patentability Assessments (Dashboard Access)/General Patentability Assessment IDFX.docx",
 } as const;
 
 /**

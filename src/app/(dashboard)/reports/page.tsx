@@ -8,8 +8,8 @@ import { FileText, FolderOpen, ExternalLink, Clock, Download } from "lucide-reac
 const ONEDRIVE_FOLDER_URL =
   "https://terasakilab-my.sharepoint.com/my?remoteItem=%7B%22mp%22%3A%7B%22webAbsoluteUrl%22%3A%22https%3A%2F%2Fterasakilab%2Dmy%2Esharepoint%2Ecom%2Fpersonal%2Fmadeline%5Frogers%5Fterasakicolab%5Forg%22%2C%22listFullUrl%22%3A%22https%3A%2F%2Fterasakilab%2Dmy%2Esharepoint%2Ecom%2Fpersonal%2Fmadeline%5Frogers%5Fterasakicolab%5Forg%2FDocuments%22%2C%22rootFolder%22%3A%22%2Fpersonal%2Fmadeline%5Frogers%5Fterasakicolab%5Forg%2FDocuments%2FKeuna%20Jeon%27s%20files%20%2D%20Maddie%2Dsummer2026%22%7D%2C%22rsi%22%3A%7B%22webAbsoluteUrl%22%3A%22https%3A%2F%2Fterasakilab%2Dmy%2Esharepoint%2Ecom%2Fpersonal%2Fkeuna%5Fjeon%5Fterasaki%5Forg%22%2C%22listFullUrl%22%3A%22https%3A%2F%2Fterasakilab%2Dmy%2Esharepoint%2Ecom%2Fpersonal%2Fkeuna%5Fjeon%5Fterasaki%5Forg%2FDocuments%22%2C%22rootFolder%22%3A%22%2Fpersonal%2Fkeuna%5Fjeon%5Fterasaki%5Forg%2FDocuments%2FDocuments%2FInnovation%20Team%2FMaddie%2Dsummer2026%2FPatentability%20Assessments%20%28Dashboard%20Access%29%22%7D%7D&id=%2Fpersonal%2Fkeuna%5Fjeon%5Fterasaki%5Forg%2FDocuments%2FDocuments%2FInnovation%20Team%2FMaddie%2Dsummer2026%2FPatentability%20Assessments%20%28Dashboard%20Access%29&listurl=%2Fpersonal%2Fkeuna%5Fjeon%5Fterasaki%5Forg%2FDocuments&viewid=797e1ae3%2D93e8%2D4e6f%2D91f3%2Dcbe8381bd274";
 
-const ASSESSMENTS_FOLDER = "Patentability Assessments (Dashboard Access)";
-const TEMPLATE_PATH = "IDF Assessments/General Patentability Assessment IDFX.docx";
+const ASSESSMENTS_FOLDER = "Dashboard Files/Patentability Assessments (Dashboard Access)";
+const TEMPLATE_PATH = "Dashboard Files/IDF Assessments/General Patentability Assessment IDFX.docx";
 const TEMPLATE_NAME = "General Patentability Assessment IDFX.docx";
 
 const HIDDEN_FILES = ["desktop.ini", "thumbs.db", ".ds_store"];
