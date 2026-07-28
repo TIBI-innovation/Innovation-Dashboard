@@ -28,6 +28,7 @@ export default function LicensingPage() {
   const [loading, setLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingPatentability, setExportingPatentability] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedbackInput, setFeedbackInput] = useState("");
   const [userFeedback, setUserFeedback] = useState("");
@@ -138,6 +139,38 @@ export default function LicensingPage() {
       setError(exportError instanceof Error ? exportError.message : "Failed to export report.");
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function exportToPatentabilityReport() {
+    if (!reportData) return;
+
+    setExportingPatentability(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/export-patentability-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ licensingData: reportData, technicalSummary }),
+      });
+
+      if (!response.ok) {
+        const errData = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(errData?.error ?? "Failed to export report.");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `patentability-assessment-${new Date().toISOString().slice(0, 10)}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (exportError) {
+      setError(exportError instanceof Error ? exportError.message : "Failed to export patentability report.");
+    } finally {
+      setExportingPatentability(false);
     }
   }
 
@@ -301,6 +334,14 @@ export default function LicensingPage() {
                     className="rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:border-primary-100 disabled:bg-primary-50 disabled:text-primary-300"
                   >
                     {exporting ? "Exporting..." : "Export to Excel"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={exportToPatentabilityReport}
+                    disabled={exportingPatentability}
+                    className="rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:cursor-not-allowed disabled:border-green-100 disabled:bg-green-50 disabled:text-green-300"
+                  >
+                    {exportingPatentability ? "Generating..." : "Export to Patentability Report"}
                   </button>
                 </div>
               </div>
