@@ -8,9 +8,12 @@ import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 
 
 interface PatentRow {
   patent_number: string;
+  tibi_id: string;
+  inventor: string;
   technology_category: string;
   status: string;
-  notes?: string;
+  licensing_status: string;
+  notes: string;
 }
 
 interface TechnologyRow {
@@ -62,8 +65,10 @@ export default function DashboardPage() {
       fetch("/api/patents", { cache: "no-store" }).then((r) => r.json()),
     ])
       .then(([techs, pats]) => {
-        setTechnologies(Array.isArray(techs) ? techs : []);
-        setPatentRows(Array.isArray(pats) ? pats : []);
+        const techPayload = techs as TechnologyRow[] | { technologies?: TechnologyRow[] };
+        const patPayload = pats as PatentRow[] | { patents?: PatentRow[] };
+        setTechnologies(Array.isArray(techPayload) ? techPayload : techPayload.technologies ?? []);
+        setPatentRows(Array.isArray(patPayload) ? patPayload : patPayload.patents ?? []);
         setLoaded(true);
       })
       .catch(() => setLoaded(true));

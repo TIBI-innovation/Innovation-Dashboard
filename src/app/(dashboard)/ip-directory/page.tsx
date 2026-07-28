@@ -16,9 +16,12 @@ interface TechnologyRow {
 
 interface PatentRow {
   patent_number: string;
+  tibi_id: string;
+  inventor: string;
   technology_category: string;
   status: string;
-  notes?: string;
+  licensing_status: string;
+  notes: string;
 }
 
 interface SectorCount {
@@ -341,16 +344,21 @@ export default function IPDirectoryPage() {
                         <table className="w-full text-left text-sm">
                           <thead>
                             <tr className="border-b border-gray-200 text-xs uppercase text-gray-400">
-                              <th className="pb-2 pr-4 font-medium">Patent Number</th>
-                              <th className="pb-2 pr-4 font-medium">Technology Sector</th>
+                              <th className="pb-2 pr-4 font-medium">Docket No.</th>
+                              <th className="pb-2 pr-4 font-medium">TIBI ID</th>
+                              <th className="pb-2 pr-4 font-medium">Inventor</th>
+                              <th className="pb-2 pr-4 font-medium">Subject Matter</th>
                               <th className="pb-2 pr-4 font-medium">Status</th>
-                              <th className="pb-2 font-medium">Notes</th>
+                              <th className="pb-2 pr-4 font-medium">Licensing Status</th>
+                              <th className="pb-2 font-medium">Deadlines</th>
                             </tr>
                           </thead>
                           <tbody>
                             {patents.map((r) => (
                               <tr key={r.patent_number} className="border-b border-gray-100 last:border-0">
-                                <td className="py-2.5 pr-4 font-medium text-gray-900">{r.patent_number}</td>
+                                <td className="py-2.5 pr-4 font-medium text-gray-900">{r.patent_number || "—"}</td>
+                                <td className="py-2.5 pr-4 text-gray-700">{r.tibi_id || "—"}</td>
+                                <td className="py-2.5 pr-4 text-gray-700">{r.inventor || "—"}</td>
                                 <td className="py-2.5 pr-4 text-gray-700">{r.technology_category || "—"}</td>
                                 <td className="py-2.5 pr-4">
                                   {r.status ? (
@@ -359,7 +367,8 @@ export default function IPDirectoryPage() {
                                     </span>
                                   ) : "—"}
                                 </td>
-                                <td className="py-2.5 text-xs text-gray-600">{r.notes || "—"}</td>
+                                <td className="py-2.5 pr-4 text-gray-700">{r.licensing_status || "—"}</td>
+                                <td className="py-2.5 pr-4 text-xs text-gray-600">{r.notes || "—"}</td>
                               </tr>
                             ))}
                           </tbody>

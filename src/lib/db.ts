@@ -179,21 +179,29 @@ export function getTechnologies(): TechnologyRow[] {
     .filter((row) => row.idf_number || row.created_by || row.technology_category);
 }
 
+export interface PatentRow {
+  patent_number: string;
+  tibi_id: string;
+  inventor: string;
+  technology_category: string;
+  status: string;
+  licensing_status: string;
+  notes: string;
+}
+
 export function getPatents(): PatentRow[] {
   const rows = readTabularRows(PATENT_DATA_FILE);
   return rows
     .map((row) => ({
-      patent_number: getFirstValue(row, ["Patent Number", "Docket No.", "patent_number"]),
-      technology_category: getFirstValue(row, [
-        "Technology Category",
-        "Technology Category ",
-        "Subject matter",
-        "technology_category",
-      ]),
+      patent_number: getFirstValue(row, ["Docket No.", "docket_no", "patent_number"]),
+      tibi_id: getFirstValue(row, ["TIBI ID No.", "tibi_id"]),
+      inventor: getFirstValue(row, ["Inventor", "inventor"]),
+      technology_category: getFirstValue(row, ["Subject matter", "Technology Category", "technology_category"]),
       status: getFirstValue(row, ["Status", "status"]),
-      notes: getFirstValue(row, ["Deadlines", "deadlines"]),
+      licensing_status: getFirstValue(row, ["Licensing Status", "licensing_status"]),
+      notes: getFirstValue(row, ["Deadlines", "deadlines", "notes"]),
     }))
-    .filter((row) => row.patent_number || row.technology_category || row.status || row.notes);
+    .filter((row) => row.patent_number || row.technology_category || row.status);
 }
 
 export function getFundingOrganizations(): FundingOrganizationRow[] {
