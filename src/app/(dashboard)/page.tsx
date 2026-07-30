@@ -93,11 +93,6 @@ export default function DashboardPage() {
     <>
       <Header />
       <div className="space-y-6 p-8">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Welcome back, Maddie</h2>
-          <p className="mt-1 text-sm text-gray-500">Here is what is happening across your portfolio.</p>
-        </div>
-
         <div className="grid gap-6 lg:grid-cols-[1.15fr_1.15fr_0.7fr]">
           {/* Column 1: Invention Disclosures */}
           <div className="min-w-0 space-y-4">

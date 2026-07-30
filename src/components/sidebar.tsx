@@ -56,17 +56,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-gray-100 p-4">
-        <div className="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-xs font-semibold">
-            MR
-          </div>
-          <div className="text-sm">
-            <p className="font-medium text-gray-900">Maddie Rogers</p>
-            <p className="text-gray-500 text-xs">Innovation Team</p>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }
