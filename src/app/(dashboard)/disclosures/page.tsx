@@ -40,6 +40,13 @@ function splitCreatorNames(createdBy: string): string[] {
     .filter((name) => name.length > 0);
 }
 
+function formatLastUpdated(value: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
 function deadlinePriority(deadline: string): number {
   const normalized = (deadline || "").trim().toUpperCase();
   if (normalized === "URGENT") return 0;
@@ -73,13 +80,15 @@ export default function DisclosuresPage() {
   const [sortMode, setSortMode] = useState<SortMode>("idf");
   const [selectedValue, setSelectedValue] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/technologies")
       .then((res) => res.json())
       .then((data) => {
-        const payload = data as TechnologyRow[] | { technologies?: TechnologyRow[] };
+        const payload = data as TechnologyRow[] | { technologies?: TechnologyRow[]; lastUpdated?: string | null };
         setTechnologies(Array.isArray(payload) ? payload : payload.technologies ?? []);
+        if (!Array.isArray(payload)) setLastUpdated(payload.lastUpdated ?? null);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -186,6 +195,9 @@ export default function DisclosuresPage() {
           <p className="mt-1 text-sm text-gray-500">
             Manage and track invention disclosure submissions.
           </p>
+          {lastUpdated && (
+            <p className="mt-1 text-xs text-gray-400">Data source last updated {formatLastUpdated(lastUpdated)}</p>
+          )}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">

@@ -82,6 +82,7 @@ function getStatusBadgeClass(status: string): string {
   if (normalized === "URGENT") return "bg-red-100 text-red-700";
   if (normalized === "TO-DO" || normalized === "TODO") return "bg-blue-100 text-blue-700";
   if (normalized === "BLOCKED") return "bg-orange-100 text-orange-700";
+  if (normalized === "AWAITING RESPONSE") return "bg-yellow-100 text-yellow-700";
   return "bg-gray-100 text-gray-700";
 }
 
@@ -159,6 +160,11 @@ export default function IPDirectoryPage() {
           <p className="mt-1 text-sm text-gray-500">
             Overview of invention disclosures and patents organized by technology sector.
           </p>
+          {(idfLastUpdated || patentLastUpdated) && (
+            <p className="mt-1 text-xs text-gray-400">
+              Data source last updated {formatLastUpdated(idfLastUpdated ?? patentLastUpdated)}
+            </p>
+          )}
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
@@ -171,9 +177,6 @@ export default function IPDirectoryPage() {
                 <Lightbulb className="h-5 w-5 text-primary-600" />
                 <h3 className="text-lg font-semibold text-gray-900">Invention Disclosure Forms (IDFs)</h3>
               </div>
-              {idfLastUpdated && (
-                <p className="mb-4 text-xs text-gray-400">Data source last updated {formatLastUpdated(idfLastUpdated)}</p>
-              )}
               {loading ? (
                 <p className="text-sm text-gray-400">Loading IDF data…</p>
               ) : technologies.length === 0 ? (
@@ -278,9 +281,6 @@ export default function IPDirectoryPage() {
                 <FileText className="h-5 w-5 text-primary-600" />
                 <h3 className="text-lg font-semibold text-gray-900">Patents Filed / Ready for Licensing</h3>
               </div>
-              {patentLastUpdated && (
-                <p className="mb-4 text-xs text-gray-400">Data source last updated {formatLastUpdated(patentLastUpdated)}</p>
-              )}
               {loading ? (
                 <p className="text-sm text-gray-400">Loading patent data…</p>
               ) : patents.length === 0 ? (

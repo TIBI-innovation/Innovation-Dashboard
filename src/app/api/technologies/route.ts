@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
-import { getTechnologies } from "@/lib/db";
+import { getIdfDataSourceInfo, getTechnologies } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const technologies = getTechnologies();
-    return NextResponse.json(technologies);
+    const idfDataSourceInfo = getIdfDataSourceInfo();
+
+    return NextResponse.json({
+      technologies,
+      lastUpdated: idfDataSourceInfo.lastUpdated,
+    });
   } catch (error) {
     console.error("Failed to fetch technologies:", error);
     return NextResponse.json(
