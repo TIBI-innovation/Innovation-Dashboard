@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { FileText, FolderOpen, ExternalLink, Clock, Download } from "lucide-react";
+import { PatentabilityBuilder } from "@/components/patentability-builder";
 
 const ONEDRIVE_FOLDER_URL =
   "https://terasakilab-my.sharepoint.com/my?remoteItem=%7B%22mp%22%3A%7B%22webAbsoluteUrl%22%3A%22https%3A%2F%2Fterasakilab%2Dmy%2Esharepoint%2Ecom%2Fpersonal%2Fmadeline%5Frogers%5Fterasakicolab%5Forg%22%2C%22listFullUrl%22%3A%22https%3A%2F%2Fterasakilab%2Dmy%2Esharepoint%2Ecom%2Fpersonal%2Fmadeline%5Frogers%5Fterasakicolab%5Forg%2FDocuments%22%2C%22rootFolder%22%3A%22%2Fpersonal%2Fmadeline%5Frogers%5Fterasakicolab%5Forg%2FDocuments%2FKeuna%20Jeon%27s%20files%20%2D%20Maddie%2Dsummer2026%22%7D%2C%22rsi%22%3A%7B%22webAbsoluteUrl%22%3A%22https%3A%2F%2Fterasakilab%2Dmy%2Esharepoint%2Ecom%2Fpersonal%2Fkeuna%5Fjeon%5Fterasaki%5Forg%22%2C%22listFullUrl%22%3A%22https%3A%2F%2Fterasakilab%2Dmy%2Esharepoint%2Ecom%2Fpersonal%2Fkeuna%5Fjeon%5Fterasaki%5Forg%2FDocuments%22%2C%22rootFolder%22%3A%22%2Fpersonal%2Fkeuna%5Fjeon%5Fterasaki%5Forg%2FDocuments%2FDocuments%2FInnovation%20Team%2FMaddie%2Dsummer2026%2FPatentability%20Assessments%20%28Dashboard%20Access%29%22%7D%7D&id=%2Fpersonal%2Fkeuna%5Fjeon%5Fterasaki%5Forg%2FDocuments%2FDocuments%2FInnovation%20Team%2FMaddie%2Dsummer2026%2FPatentability%20Assessments%20%28Dashboard%20Access%29&listurl=%2Fpersonal%2Fkeuna%5Fjeon%5Fterasaki%5Forg%2FDocuments&viewid=797e1ae3%2D93e8%2D4e6f%2D91f3%2Dcbe8381bd274";
@@ -93,6 +94,8 @@ export default function ReportsPage() {
             <ExternalLink className="h-3.5 w-3.5 opacity-70" />
           </a>
         </div>
+
+        <PatentabilityBuilder />
 
         <Card>
           <CardHeader>

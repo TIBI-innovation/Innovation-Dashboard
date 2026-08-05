@@ -1,25 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Header } from "@/components/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { KeyRound } from "lucide-react";
+import { KeyRound, ArrowRight } from "lucide-react";
+import { saveLicensingDraft, type LicensingReportData } from "@/lib/licensing-draft";
 
-interface LicensingTarget {
-  companyName: string;
-  companySize: string;
-  fitPercentage: number;
-  strategicFit: string;
-  decisionMakerRoles: string[];
-}
-
-interface ReportData {
-  oneSentenceSummary: string;
-  targetSectors: string[];
-  licensingTargets: LicensingTarget[];
-  assumptions: string[];
-  aiGeneratedDisclaimer: string;
-}
+type ReportData = LicensingReportData;
 
 export default function LicensingPage() {
   const [technicalSummary, setTechnicalSummary] = useState("");
@@ -28,10 +16,25 @@ export default function LicensingPage() {
   const [loading, setLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [exportingPatentability, setExportingPatentability] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedbackInput, setFeedbackInput] = useState("");
   const [userFeedback, setUserFeedback] = useState("");
+  const summaryTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = summaryTextareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [reportData?.oneSentenceSummary]);
+
+  // Hand off to the "Build Patentability Assessment" builder on the Reports
+  // page -- there's no backend database, so this is how that page picks up
+  // whatever's currently generated/edited here.
+  useEffect(() => {
+    if (!reportData) return;
+    saveLicensingDraft({ technicalSummary, ftoConstraints, reportData });
+  }, [reportData, technicalSummary, ftoConstraints]);
 
   async function generateReport() {
     setLoading(true);
@@ -142,38 +145,6 @@ export default function LicensingPage() {
     }
   }
 
-  async function exportToPatentabilityReport() {
-    if (!reportData) return;
-
-    setExportingPatentability(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/export-patentability-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ licensingData: reportData, technicalSummary }),
-      });
-
-      if (!response.ok) {
-        const errData = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(errData?.error ?? "Failed to export report.");
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `patentability-assessment-${new Date().toISOString().slice(0, 10)}.docx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (exportError) {
-      setError(exportError instanceof Error ? exportError.message : "Failed to export patentability report.");
-    } finally {
-      setExportingPatentability(false);
-    }
-  }
-
   return (
     <>
       <Header />
@@ -239,13 +210,16 @@ export default function LicensingPage() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Technology Summary</label>
-                  <input
-                    type="text"
+                  <textarea
+                    ref={summaryTextareaRef}
                     value={reportData.oneSentenceSummary}
-                    onChange={(event) =>
-                      setReportData({ ...reportData, oneSentenceSummary: event.target.value })
-                    }
-                    className="w-full rounded-lg border border-gray-300 p-3 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    onChange={(event) => {
+                      setReportData({ ...reportData, oneSentenceSummary: event.target.value });
+                      event.target.style.height = "auto";
+                      event.target.style.height = `${event.target.scrollHeight}px`;
+                    }}
+                    rows={2}
+                    className="w-full resize-y overflow-hidden rounded-lg border border-gray-300 p-3 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
                 </div>
 
@@ -335,14 +309,19 @@ export default function LicensingPage() {
                   >
                     {exporting ? "Exporting..." : "Export to Excel"}
                   </button>
-                  <button
-                    type="button"
-                    onClick={exportToPatentabilityReport}
-                    disabled={exportingPatentability}
-                    className="rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:cursor-not-allowed disabled:border-green-100 disabled:bg-green-50 disabled:text-green-300"
+                </div>
+
+                <div className="flex items-center gap-2 rounded-lg border border-primary-100 bg-primary-50 px-4 py-3">
+                  <p className="text-sm text-primary-700">
+                    Ready to add this to a Patentability Assessment?
+                  </p>
+                  <Link
+                    href="/reports"
+                    className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-primary-700 hover:text-primary-800"
                   >
-                    {exportingPatentability ? "Generating..." : "Export to Patentability Report"}
-                  </button>
+                    Build it on the Reports page
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               </div>
             )}
